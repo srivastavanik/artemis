@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Layout from '../components/Layout';
-import { analyticsService } from '../services/analytics.service';
+import analyticsService from '../services/analytics.service';
 import ActivityFeed from '../components/ActivityFeed';
 
 const Dashboard = () => {

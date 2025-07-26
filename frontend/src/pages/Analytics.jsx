@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Layout from '../components/Layout';
-import { analyticsService } from '../services/analytics.service';
+import analyticsService from '../services/analytics.service';
 
 const Analytics = () => {
   const [timeRange, setTimeRange] = useState('7d');
