@@ -25,12 +25,20 @@ class WebSocketService {
             return callback(null, true);
           }
           
-          // In production, use the configured frontend URL
-          const allowedOrigin = process.env.FRONTEND_URL || 'http://localhost:5173';
-          if (origin === allowedOrigin) {
+          // List of allowed origins
+          const allowedOrigins = [
+            'https://artemis-murex.vercel.app',
+            process.env.FRONTEND_URL,
+            'http://localhost:5173',
+            'http://localhost:3000'
+          ].filter(Boolean);
+          
+          // Check if origin is allowed
+          if (allowedOrigins.includes(origin)) {
             return callback(null, true);
           }
           
+          logger.warn('WebSocket CORS rejected origin:', { origin, allowedOrigins });
           return callback(new Error('Not allowed by CORS'));
         },
         credentials: true,
