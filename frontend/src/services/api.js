@@ -2,7 +2,7 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api'
 
 class ApiService {
   constructor() {
-    this.token = localStorage.getItem('auth_token');
+    this.token = localStorage.getItem('artemis_token');
   }
 
   async request(endpoint, options = {}) {
@@ -23,12 +23,15 @@ class ApiService {
 
     try {
       const response = await fetch(url, config);
+      const data = await response.json();
       
       if (!response.ok) {
-        throw new Error(`API Error: ${response.statusText}`);
+        const error = new Error(data.error || `API Error: ${response.statusText}`);
+        error.response = { data };
+        throw error;
       }
       
-      return await response.json();
+      return { data };
     } catch (error) {
       console.error('API Request failed:', error);
       throw error;
@@ -64,13 +67,13 @@ class ApiService {
   // Set auth token
   setAuthToken(token) {
     this.token = token;
-    localStorage.setItem('auth_token', token);
+    localStorage.setItem('artemis_token', token);
   }
 
   // Clear auth token
   clearAuthToken() {
     this.token = null;
-    localStorage.removeItem('auth_token');
+    localStorage.removeItem('artemis_token');
   }
 }
 

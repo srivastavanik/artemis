@@ -25,7 +25,7 @@ class AuthService {
       throw new Error(response.data.error || 'Signup failed');
     } catch (error) {
       console.error('Signup error:', error);
-      throw error.response?.data?.error || error.message;
+      throw new Error(error.response?.data?.error || error.message || 'Signup failed');
     }
   }
 
@@ -260,8 +260,8 @@ class AuthService {
 
   setToken(token) {
     localStorage.setItem(this.tokenKey, token);
-    // Update API default headers
-    api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+    // Update API token
+    api.setAuthToken(token);
   }
 
   setUser(user) {
@@ -280,7 +280,7 @@ class AuthService {
   clearSession() {
     localStorage.removeItem(this.tokenKey);
     localStorage.removeItem(this.userKey);
-    delete api.defaults.headers.common['Authorization'];
+    api.clearAuthToken();
   }
 
   isAuthenticated() {
@@ -308,7 +308,7 @@ class AuthService {
   initialize() {
     const token = this.getToken();
     if (token) {
-      api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      api.setAuthToken(token);
     }
   }
 }
