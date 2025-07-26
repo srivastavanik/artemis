@@ -4,7 +4,7 @@ function Layout({ children }) {
   const location = useLocation();
   
   const navigation = [
-    { name: 'Dashboard', href: '/' },
+    { name: 'Dashboard', href: '/dashboard' },
     { name: 'Prospects', href: '/prospects' },
     { name: 'Campaigns', href: '/campaigns' },
     { name: 'Analytics', href: '/analytics' },
@@ -12,13 +12,13 @@ function Layout({ children }) {
   ];
   
   return (
-    <div className="min-h-screen bg-neutral-50">
+    <div className="min-h-screen bg-[#0a0a0a] grid-pattern">
       {/* Header */}
-      <header className="bg-white border-b border-neutral-200">
+      <header className="glass border-b border-white/10">
         <div className="max-w-7xl mx-auto px-6">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
-              <h1 className="text-xl font-semibold">Artemis</h1>
+              <h1 className="text-xl font-semibold gradient-text">ARTEMIS</h1>
             </div>
             <nav className="flex space-x-1">
               {navigation.map((item) => {
