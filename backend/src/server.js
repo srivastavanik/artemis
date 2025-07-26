@@ -37,6 +37,13 @@ websocketService.initialize(server);
 app.use(rateLimit.general);
 
 // Middleware
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:3000',
+  'https://artemis-murex.vercel.app',
+  process.env.FRONTEND_URL
+].filter(Boolean);
+
 app.use(cors({
   origin: function(origin, callback) {
     // Allow requests with no origin (like mobile apps or curl requests)
@@ -47,11 +54,13 @@ app.use(cors({
       return callback(null, true);
     }
     
-    // In production, use the configured frontend URL
-    const allowedOrigin = process.env.FRONTEND_URL || 'http://localhost:5173';
-    if (origin === allowedOrigin) {
+    // Check if origin is in allowed list
+    if (allowedOrigins.includes(origin)) {
       return callback(null, true);
     }
+    
+    // Log the rejected origin for debugging
+    logger.warn('CORS rejected origin:', { origin, allowedOrigins });
     
     return callback(new Error('Not allowed by CORS'));
   },
@@ -59,6 +68,9 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
+
+// Handle preflight requests
+app.options('*', cors());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
