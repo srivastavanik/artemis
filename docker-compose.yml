@@ -1,0 +1,84 @@
+version: '3.8'
+
+services:
+  # Backend API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: artemis-backend
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=development
+      - PORT=3001
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_KEY=${SUPABASE_KEY}
+      - BRIGHTDATA_API_KEY=${BRIGHTDATA_API_KEY}
+      - LLAMAINDEX_API_KEY=${LLAMAINDEX_API_KEY}
+      - ARCADE_API_KEY=${ARCADE_API_KEY}
+      - MASTRA_API_KEY=${MASTRA_API_KEY}
+      - JWT_SECRET=${JWT_SECRET}
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    command: npm run dev
+    networks:
+      - artemis-network
+    depends_on:
+      - postgres
+
+  # Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: artemis-frontend
+    ports:
+      - "5173:5173"
+    environment:
+      - NODE_ENV=development
+      - VITE_API_URL=http://localhost:3001/api
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    command: npm run dev
+    networks:
+      - artemis-network
+    depends_on:
+      - backend
+
+  # PostgreSQL Database (for local development)
+  postgres:
+    image: postgres:15-alpine
+    container_name: artemis-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=artemis
+      - POSTGRES_PASSWORD=artemis_dev_password
+      - POSTGRES_DB=artemis_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/migrations:/docker-entrypoint-initdb.d
+    networks:
+      - artemis-network
+
+  # Redis (for caching and real-time features)
+  redis:
+    image: redis:7-alpine
+    container_name: artemis-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - artemis-network
+
+networks:
+  artemis-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:
