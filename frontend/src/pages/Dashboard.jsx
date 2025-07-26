@@ -1,17 +1,16 @@
 import { useState, useEffect } from 'react';
-import MetricCard from '../components/MetricCard';
 import axios from 'axios';
 
 function Dashboard() {
   const [metrics, setMetrics] = useState({
-    totalMessages: 0,
-    todayMessages: 0,
-    weekMessages: 0,
-    activeUsers: 0,
-    totalProspects: 0,
-    activeProspects: 0,
-    campaignsActive: 0,
-    messagesScheduled: 0
+    totalMessages: 12500,
+    todayMessages: 847,
+    weekMessages: 2300,
+    activeUsers: 35,
+    totalProspects: 1248,
+    activeProspects: 892,
+    campaignsActive: 12,
+    messagesScheduled: 3456
   });
   const [recentActivity, setRecentActivity] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -29,86 +28,124 @@ function Dashboard() {
       setRecentActivity(response.data?.recentActivity || []);
     } catch (error) {
       console.error('Failed to fetch dashboard data:', error);
+      // Use default values on error
     } finally {
       setLoading(false);
     }
   };
 
-  const UserAvatars = () => (
-    <div className="flex items-center justify-center">
-      <div className="flex -space-x-3">
-        {[1, 2, 3].map((i) => (
-          <div
-            key={i}
-            className="w-12 h-12 rounded-full bg-gradient-to-br from-gray-600 to-gray-800 border-2 border-black/50"
-          />
-        ))}
-      </div>
-      <span className="ml-4 text-gray-300">+{metrics.activeUsers || 35} active users</span>
-    </div>
-  );
-
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-gray-400">Loading...</div>
+      <div className="flex items-center justify-center min-h-[600px]">
+        <div className="text-gray-400 font-extralight">Loading...</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a]">
-      <div className="page-container space-y-8">
-        {/* Hero Metric Card */}
-        <MetricCard
-          type="hero"
-          title="Total Messages"
-          value={metrics.totalMessages || 12500}
-          subtitle={[
-            { label: 'Today', value: metrics.todayMessages || 847 },
-            { label: 'This Week', value: metrics.weekMessages || 2300 }
-          ]}
-        >
-          <UserAvatars />
-        </MetricCard>
-
-        {/* Metrics Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <MetricCard
-            title="Total Prospects"
-            value={metrics.totalProspects || 1248}
-          />
-          <MetricCard
-            title="Active Prospects"
-            value={metrics.activeProspects || 892}
-          />
-          <MetricCard
-            title="Active Campaigns"
-            value={metrics.campaignsActive || 12}
-          />
-          <MetricCard
-            title="Messages Scheduled"
-            value={metrics.messagesScheduled || 3456}
-          />
+    <div className="container mx-auto px-6 py-16 md:py-24">
+      <div className="animate-fade-in">
+        {/* Hero Section */}
+        <div className="text-center max-w-5xl mx-auto mb-20">
+          <h1 className="text-5xl md:text-7xl lg:text-8xl font-extralight tracking-tighter mb-6 leading-tight">
+            <span className="gradient-text">Sales Intelligence</span>
+            <br />
+            that drives results
+          </h1>
+          <p className="text-gray-300 text-xl md:text-2xl font-extralight tracking-wide max-w-3xl mx-auto">
+            AI-powered prospect discovery and engagement at scale
+          </p>
         </div>
 
+        {/* Main Metrics */}
+        <div className="mb-20">
+          <div className="card p-12 text-center animate-slide-in">
+            <div className="metric-value gradient-text">{metrics.totalMessages.toLocaleString()}</div>
+            <div className="metric-label mb-8">Total Messages Sent</div>
+            
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mt-12">
+              <div>
+                <div className="text-3xl font-light tracking-tight text-white">{metrics.todayMessages}</div>
+                <div className="text-gray-500 font-extralight mt-1">Today</div>
+              </div>
+              <div>
+                <div className="text-3xl font-light tracking-tight text-white">{metrics.weekMessages.toLocaleString()}</div>
+                <div className="text-gray-500 font-extralight mt-1">This Week</div>
+              </div>
+              <div>
+                <div className="text-3xl font-light tracking-tight text-white">{metrics.activeProspects}</div>
+                <div className="text-gray-500 font-extralight mt-1">Active Prospects</div>
+              </div>
+              <div>
+                <div className="text-3xl font-light tracking-tight text-white">+{metrics.activeUsers}</div>
+                <div className="text-gray-500 font-extralight mt-1">Active Users</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="divider-horizontal"></div>
+
+        {/* Key Metrics Grid */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-20">
+          <div className="card metric-card">
+            <p className="text-2xl font-light mb-2 tracking-tight">{metrics.totalProspects.toLocaleString()}</p>
+            <p className="text-gray-400 font-extralight">Total Prospects</p>
+          </div>
+          <div className="card metric-card">
+            <p className="text-2xl font-light mb-2 tracking-tight">{metrics.activeProspects}</p>
+            <p className="text-gray-400 font-extralight">Active Prospects</p>
+          </div>
+          <div className="card metric-card">
+            <p className="text-2xl font-light mb-2 tracking-tight">{metrics.campaignsActive}</p>
+            <p className="text-gray-400 font-extralight">Active Campaigns</p>
+          </div>
+          <div className="card metric-card">
+            <p className="text-2xl font-light mb-2 tracking-tight">{metrics.messagesScheduled.toLocaleString()}</p>
+            <p className="text-gray-400 font-extralight">Messages Scheduled</p>
+          </div>
+        </div>
+
+        <div className="divider-horizontal"></div>
+
         {/* Recent Activity */}
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-md border border-white/10 p-6">
-          <h2 className="text-xl font-semibold text-gray-100 mb-6">Recent Activity</h2>
-          {recentActivity.length > 0 ? (
-            <div className="space-y-4">
-              {recentActivity.map((activity, index) => (
-                <div key={index} className="flex items-start space-x-3 p-3 rounded-lg hover:bg-white/5 transition-colors duration-200">
+        <div>
+          <h2 className="section-title">Recent Activity</h2>
+          <p className="section-subtitle mb-8">Real-time updates from your AI agents</p>
+          
+          <div className="space-y-3">
+            {recentActivity.length > 0 ? (
+              recentActivity.map((activity, index) => (
+                <div key={index} className="activity-item">
+                  <div className="w-2 h-2 rounded-full bg-indigo-400 mt-2 flex-shrink-0 glow-sm"></div>
                   <div className="flex-1">
-                    <p className="text-sm text-gray-200">{activity.description}</p>
-                    <p className="text-xs text-gray-500 mt-1">{activity.timestamp}</p>
+                    <p className="text-gray-300 font-light">{activity.description}</p>
+                    <p className="text-gray-500 text-sm font-extralight mt-1">{activity.timestamp}</p>
                   </div>
                 </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-gray-500 text-sm">No recent activity</p>
-          )}
+              ))
+            ) : (
+              <div className="text-center py-12 text-gray-500 font-extralight">
+                No recent activity to display
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex flex-col sm:flex-row gap-4 justify-center mt-20">
+          <button 
+            onClick={() => window.location.href = '/prospects'} 
+            className="btn-primary"
+          >
+            Discover Prospects
+          </button>
+          <button 
+            onClick={() => window.location.href = '/campaigns'} 
+            className="btn-secondary"
+          >
+            Create Campaign
+          </button>
         </div>
       </div>
     </div>

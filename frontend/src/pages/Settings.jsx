@@ -1,192 +1,267 @@
-import { useState, useEffect } from 'react';
-import axios from 'axios';
+import { useState } from 'react';
 
 function Settings() {
+  const [activeTab, setActiveTab] = useState('api');
   const [apiKeys, setApiKeys] = useState({
-    brightdata: '',
-    llamaindex: '',
-    arcade: '',
-    openai: ''
+    brightdata: '••••••••••••••••',
+    llamaindex: '••••••••••••••••',
+    arcade: '••••••••••••••••',
+    supabase: '••••••••••••••••'
   });
-  const [preferences, setPreferences] = useState({
-    emailNotifications: true,
-    autoEnrichment: false,
-    defaultCampaignType: 'email'
-  });
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    fetchSettings();
-  }, []);
+  const tabs = [
+    { id: 'api', name: 'API Configuration' },
+    { id: 'agents', name: 'AI Agents' },
+    { id: 'channels', name: 'Channels' },
+    { id: 'team', name: 'Team' },
+  ];
 
-  const fetchSettings = async () => {
-    try {
-      const response = await axios.get(`${import.meta.env.VITE_API_URL}/settings`);
-      if (response.data.apiKeys) {
-        setApiKeys(response.data.apiKeys);
-      }
-      if (response.data.preferences) {
-        setPreferences(response.data.preferences);
-      }
-    } catch (error) {
-      console.error('Failed to fetch settings:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSaveApiKeys = async () => {
-    setSaving(true);
-    try {
-      await axios.put(`${import.meta.env.VITE_API_URL}/settings/api-keys`, apiKeys);
-      alert('API keys updated successfully');
-    } catch (error) {
-      console.error('Failed to save API keys:', error);
-      alert('Failed to save API keys');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleSavePreferences = async () => {
-    setSaving(true);
-    try {
-      await axios.put(`${import.meta.env.VITE_API_URL}/settings/preferences`, preferences);
-      alert('Preferences updated successfully');
-    } catch (error) {
-      console.error('Failed to save preferences:', error);
-      alert('Failed to save preferences');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-neutral-500">Loading...</div>
-      </div>
-    );
-  }
+  const agentSettings = [
+    { name: 'Scout Agent', status: 'active', tasks: 3456, accuracy: 94.2 },
+    { name: 'Analyst Agent', status: 'active', tasks: 2890, accuracy: 91.8 },
+    { name: 'Strategist Agent', status: 'active', tasks: 1203, accuracy: 96.5 },
+    { name: 'Executor Agent', status: 'active', tasks: 4567, accuracy: 89.3 },
+  ];
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-semibold">Settings</h1>
-
-      {/* API Configuration */}
-      <div className="card">
-        <h2 className="text-lg font-semibold mb-4">API Configuration</h2>
-        <div className="space-y-4">
-          <div className="form-group">
-            <label className="form-label">BrightData API Key</label>
-            <input
-              type="password"
-              className="input-field"
-              value={apiKeys.brightdata}
-              onChange={(e) => setApiKeys({...apiKeys, brightdata: e.target.value})}
-              placeholder="Enter your BrightData API key"
-            />
-          </div>
-          
-          <div className="form-group">
-            <label className="form-label">LlamaIndex API Key</label>
-            <input
-              type="password"
-              className="input-field"
-              value={apiKeys.llamaindex}
-              onChange={(e) => setApiKeys({...apiKeys, llamaindex: e.target.value})}
-              placeholder="Enter your LlamaIndex API key"
-            />
-          </div>
-          
-          <div className="form-group">
-            <label className="form-label">Arcade API Key</label>
-            <input
-              type="password"
-              className="input-field"
-              value={apiKeys.arcade}
-              onChange={(e) => setApiKeys({...apiKeys, arcade: e.target.value})}
-              placeholder="Enter your Arcade API key"
-            />
-          </div>
-          
-          <div className="form-group">
-            <label className="form-label">OpenAI API Key (for AI agents)</label>
-            <input
-              type="password"
-              className="input-field"
-              value={apiKeys.openai}
-              onChange={(e) => setApiKeys({...apiKeys, openai: e.target.value})}
-              placeholder="Enter your OpenAI API key"
-            />
-          </div>
-          
-          <button
-            onClick={handleSaveApiKeys}
-            disabled={saving}
-            className="btn-primary"
-          >
-            {saving ? 'Saving...' : 'Save API Keys'}
-          </button>
+    <div className="container mx-auto px-6 py-16">
+      <div className="animate-fade-in">
+        {/* Header */}
+        <div className="mb-12">
+          <h1 className="text-4xl md:text-5xl font-extralight tracking-tighter mb-4">
+            <span className="gradient-text">Platform</span> Settings
+          </h1>
+          <p className="text-gray-400 text-lg font-extralight">
+            Configure your AI-powered sales intelligence system
+          </p>
         </div>
-      </div>
 
-      {/* Preferences */}
-      <div className="card">
-        <h2 className="text-lg font-semibold mb-4">Preferences</h2>
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="font-medium">Email Notifications</div>
-              <div className="text-sm text-neutral-600">Receive updates about campaign performance</div>
-            </div>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input
-                type="checkbox"
-                className="sr-only peer"
-                checked={preferences.emailNotifications}
-                onChange={(e) => setPreferences({...preferences, emailNotifications: e.target.checked})}
-              />
-              <div className="w-11 h-6 bg-neutral-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-neutral-900"></div>
-            </label>
-          </div>
-          
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="font-medium">Auto-Enrichment</div>
-              <div className="text-sm text-neutral-600">Automatically enrich new prospects</div>
-            </div>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input
-                type="checkbox"
-                className="sr-only peer"
-                checked={preferences.autoEnrichment}
-                onChange={(e) => setPreferences({...preferences, autoEnrichment: e.target.checked})}
-              />
-              <div className="w-11 h-6 bg-neutral-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-neutral-900"></div>
-            </label>
-          </div>
-          
-          <div className="form-group">
-            <label className="form-label">Default Campaign Type</label>
-            <select
-              className="input-field"
-              value={preferences.defaultCampaignType}
-              onChange={(e) => setPreferences({...preferences, defaultCampaignType: e.target.value})}
+        {/* Tabs */}
+        <div className="flex gap-6 mb-12 border-b border-indigo-500/10">
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`pb-4 px-2 text-sm font-light transition-all relative ${
+                activeTab === tab.id
+                  ? 'text-white'
+                  : 'text-gray-400 hover:text-gray-300'
+              }`}
             >
-              <option value="email">Email</option>
-              <option value="sms">SMS</option>
-              <option value="multi">Multi-channel</option>
-            </select>
+              {tab.name}
+              {activeTab === tab.id && (
+                <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-indigo-400 to-purple-400"></div>
+              )}
+            </button>
+          ))}
+        </div>
+
+        {/* API Configuration Tab */}
+        {activeTab === 'api' && (
+          <div className="space-y-8">
+            <div className="card">
+              <h3 className="text-xl font-light mb-6">Sponsor API Keys</h3>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm text-gray-400 mb-2 font-light">BrightData API Key</label>
+                  <div className="flex gap-4">
+                    <input
+                      type="password"
+                      className="input-field flex-1"
+                      value={apiKeys.brightdata}
+                      readOnly
+                    />
+                    <button className="btn-secondary btn-sm">Reveal</button>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-400 mb-2 font-light">LlamaIndex API Key</label>
+                  <div className="flex gap-4">
+                    <input
+                      type="password"
+                      className="input-field flex-1"
+                      value={apiKeys.llamaindex}
+                      readOnly
+                    />
+                    <button className="btn-secondary btn-sm">Reveal</button>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-400 mb-2 font-light">Arcade API Key</label>
+                  <div className="flex gap-4">
+                    <input
+                      type="password"
+                      className="input-field flex-1"
+                      value={apiKeys.arcade}
+                      readOnly
+                    />
+                    <button className="btn-secondary btn-sm">Reveal</button>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-400 mb-2 font-light">Supabase URL & Key</label>
+                  <div className="flex gap-4">
+                    <input
+                      type="password"
+                      className="input-field flex-1"
+                      value={apiKeys.supabase}
+                      readOnly
+                    />
+                    <button className="btn-secondary btn-sm">Reveal</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="card">
+              <h3 className="text-xl font-light mb-6">Webhook Configuration</h3>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm text-gray-400 mb-2 font-light">Webhook URL</label>
+                  <input
+                    type="url"
+                    className="input-field"
+                    placeholder="https://your-webhook-endpoint.com/artemis"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-400 mb-2 font-light">Events</label>
+                  <div className="space-y-2">
+                    <label className="flex items-center gap-3 text-sm font-light">
+                      <input type="checkbox" className="rounded border-indigo-500/30" defaultChecked />
+                      <span>New prospect discovered</span>
+                    </label>
+                    <label className="flex items-center gap-3 text-sm font-light">
+                      <input type="checkbox" className="rounded border-indigo-500/30" defaultChecked />
+                      <span>Campaign completed</span>
+                    </label>
+                    <label className="flex items-center gap-3 text-sm font-light">
+                      <input type="checkbox" className="rounded border-indigo-500/30" />
+                      <span>High-value reply received</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
-          
-          <button
-            onClick={handleSavePreferences}
-            disabled={saving}
-            className="btn-primary"
-          >
-            {saving ? 'Saving...' : 'Save Preferences'}
+        )}
+
+        {/* AI Agents Tab */}
+        {activeTab === 'agents' && (
+          <div className="space-y-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {agentSettings.map((agent) => (
+                <div key={agent.name} className="card">
+                  <div className="flex items-start justify-between mb-4">
+                    <div>
+                      <h3 className="text-lg font-normal mb-1">{agent.name}</h3>
+                      <p className="text-sm text-green-400 font-light">Active</p>
+                    </div>
+                    <button className="text-sm text-indigo-400 hover:text-indigo-300 font-light">
+                      Configure
+                    </button>
+                  </div>
+                  <div className="space-y-3 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-400 font-extralight">Tasks Completed</span>
+                      <span className="font-light">{agent.tasks.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-400 font-extralight">Accuracy</span>
+                      <span className="font-light">{agent.accuracy}%</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="card">
+              <h3 className="text-xl font-light mb-6">Agent Collaboration Rules</h3>
+              <div className="space-y-4">
+                <div className="p-4 rounded-lg border border-indigo-500/10 bg-indigo-500/5">
+                  <p className="text-sm font-light mb-2">Scout → Analyst Pipeline</p>
+                  <p className="text-xs text-gray-400 font-extralight">
+                    Automatically trigger analysis when Scout discovers high-potential prospects
+                  </p>
+                </div>
+                <div className="p-4 rounded-lg border border-indigo-500/10 bg-indigo-500/5">
+                  <p className="text-sm font-light mb-2">Strategist → Executor Workflow</p>
+                  <p className="text-xs text-gray-400 font-extralight">
+                    Execute campaigns immediately after Strategist approval
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Channels Tab */}
+        {activeTab === 'channels' && (
+          <div className="space-y-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="card">
+                <h3 className="text-lg font-normal mb-4">Email Configuration</h3>
+                <div className="space-y-3 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-400 font-extralight">Provider</span>
+                    <span className="font-light">SendGrid</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400 font-extralight">Daily Limit</span>
+                    <span className="font-light">5,000</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400 font-extralight">Sent Today</span>
+                    <span className="font-light">847</span>
+                  </div>
+                </div>
+              </div>
+              <div className="card">
+                <h3 className="text-lg font-normal mb-4">LinkedIn Configuration</h3>
+                <div className="space-y-3 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-400 font-extralight">Connection</span>
+                    <span className="font-light text-green-400">Active</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400 font-extralight">Daily Limit</span>
+                    <span className="font-light">100</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400 font-extralight">Sent Today</span>
+                    <span className="font-light">32</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Team Tab */}
+        {activeTab === 'team' && (
+          <div className="space-y-8">
+            <div className="card">
+              <h3 className="text-xl font-light mb-6">Team Members</h3>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between p-4 rounded-lg border border-indigo-500/10">
+                  <div>
+                    <p className="font-normal">Admin User</p>
+                    <p className="text-sm text-gray-400 font-extralight">admin@artemis.ai</p>
+                  </div>
+                  <span className="text-sm text-gray-400 font-light">Owner</span>
+                </div>
+              </div>
+              <button className="btn-secondary mt-6">
+                Invite Team Member
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Save Button */}
+        <div className="flex justify-end mt-12">
+          <button className="btn-primary">
+            Save Changes
           </button>
         </div>
       </div>
