@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Layout from '../components/Layout';
-import { campaignsService } from '../services/campaigns.service';
+import campaignsService from '../services/campaigns.service';
 
 const Campaigns = () => {
   const [campaigns, setCampaigns] = useState([]);

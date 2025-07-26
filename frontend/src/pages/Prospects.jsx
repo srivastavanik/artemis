@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Layout from '../components/Layout';
-import { prospectsService } from '../services/prospects.service';
+import prospectsService from '../services/prospects.service';
 import ProspectDetailModal from '../components/ProspectDetailModal';
 
 const Prospects = () => {
