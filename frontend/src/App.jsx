@@ -3,6 +3,7 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from './contexts/AuthContext'
 import ProtectedRoute from './components/ProtectedRoute'
 import Layout from './components/Layout'
+import Home from './pages/Home'
 import Dashboard from './pages/Dashboard'
 import Prospects from './pages/Prospects'
 import Campaigns from './pages/Campaigns'
@@ -23,14 +24,13 @@ function App() {
   return (
     <AuthProvider>
       <Routes>
+        {/* Public Routes */}
+        <Route path="/" element={<Home />} />
+        
         {/* Auth Routes */}
-        <Route path="/auth">
-          <Route path="login" element={<Login />} />
-          <Route path="signup" element={<Signup />} />
-          <Route path="callback" element={<AuthCallback />} />
-          <Route path="success" element={<AuthCallback />} />
-          <Route path="error" element={<AuthCallback />} />
-        </Route>
+        <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<Signup />} />
+        <Route path="/auth/callback" element={<AuthCallback />} />
         
         {/* Onboarding Route */}
         <Route path="/onboarding" element={
@@ -40,7 +40,7 @@ function App() {
         } />
         
         {/* Protected App Routes */}
-        <Route path="/" element={
+        <Route path="/app" element={
           <ProtectedRoute>
             <Layout />
           </ProtectedRoute>
@@ -53,7 +53,7 @@ function App() {
           <Route path="demo" element={<LiveDemo />} />
         </Route>
         
-        {/* Redirect any unknown routes to dashboard */}
+        {/* Redirect any unknown routes to home */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       

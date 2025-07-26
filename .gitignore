@@ -66,3 +66,6 @@ temp/
 .eslintcache
 .prettierignore
 *.pem
+
+# Private deployment keys
+DEPLOYMENT_KEYS_PRIVATE.md

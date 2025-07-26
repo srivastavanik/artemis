@@ -84,12 +84,7 @@ export default function Login() {
       <div className="max-w-md w-full space-y-8">
         {/* Logo and Title */}
         <div className="text-center">
-          <div className="flex justify-center mb-4">
-            <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg">
-              <SparklesIcon className="w-10 h-10 text-white" />
-            </div>
-          </div>
-          <h1 className="text-4xl font-bold text-white mb-2">Welcome to ARTEMIS</h1>
+          <h1 className="text-4xl font-bold text-white mb-2">ARTEMIS</h1>
           <p className="text-gray-400">AI-Powered Sales Intelligence Platform</p>
         </div>
 
@@ -119,8 +114,8 @@ export default function Login() {
               onClick={() => setLoginMethod('magic')}
               className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-colors ${
                 loginMethod === 'magic'
-                  ? 'bg-blue-500/20 text-blue-400 border border-blue-500/50'
-                  : 'bg-gray-700/50 text-gray-400 hover:bg-gray-700'
+                  ? 'bg-purple-600 text-white'
+                  : 'bg-gray-700 text-gray-400 hover:text-white'
               }`}
             >
               Magic Link
@@ -129,8 +124,8 @@ export default function Login() {
               onClick={() => setLoginMethod('password')}
               className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-colors ${
                 loginMethod === 'password'
-                  ? 'bg-blue-500/20 text-blue-400 border border-blue-500/50'
-                  : 'bg-gray-700/50 text-gray-400 hover:bg-gray-700'
+                  ? 'bg-purple-600 text-white'
+                  : 'bg-gray-700 text-gray-400 hover:text-white'
               }`}
             >
               Password
@@ -222,20 +217,13 @@ export default function Login() {
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-400">
               Don't have an account?{' '}
-              <Link to="/auth/signup" className="text-blue-400 hover:text-blue-300 font-medium">
+              <Link to="/signup" className="text-purple-400 hover:text-purple-300 font-medium">
                 Sign up for free
               </Link>
             </p>
           </div>
         </div>
 
-        {/* Demo Credentials */}
-        {loginMethod === 'password' && (
-          <div className="text-center text-sm text-gray-500">
-            <p>Demo credentials:</p>
-            <p className="font-mono">demo@artemis.ai / demo123</p>
-          </div>
-        )}
       </div>
     </div>
   );

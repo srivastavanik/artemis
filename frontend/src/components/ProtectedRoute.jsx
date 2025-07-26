@@ -24,7 +24,7 @@ export default function ProtectedRoute({ children, requireWorkspace = true }) {
 
   // Not authenticated - redirect to login
   if (!isAuthenticated) {
-    return <Navigate to="/auth/login" state={{ from: location }} replace />;
+    return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
   // Check if onboarding is complete
