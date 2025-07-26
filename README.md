@@ -1,282 +1,237 @@
-# ARTEMIS: AI-Powered Sales Intelligence Platform
+# ARTEMIS - AI-Powered Sales Intelligence Platform
 
-ARTEMIS is a sophisticated sales intelligence platform that leverages AI agents to automate prospect discovery, enrichment, scoring, and personalized outreach campaigns. Built with modern technologies and featuring a sleek dark-themed UI with glass morphism effects.
+ARTEMIS is a comprehensive AI-powered sales intelligence platform that combines prospect discovery, enrichment, scoring, and multi-channel outreach orchestration using cutting-edge AI agents and sponsor APIs.
 
-![ARTEMIS Platform](https://img.shields.io/badge/version-1.0.0-blue.svg)
-![License](https://img.shields.io/badge/license-MIT-green.svg)
+## Features
 
-## 🚀 Features
-
-### AI-Powered Multi-Agent System
-- **Scout Agent**: Discovers and identifies high-value prospects using BrightData
-- **Analyst Agent**: Scores prospects and generates insights using LlamaIndex
-- **Strategist Agent**: Designs personalized campaign strategies
+### Multi-Agent Architecture
+- **Scout Agent**: Discovers and enriches prospect data using BrightData
+- **Analyst Agent**: Scores prospects using LlamaIndex insights
+- **Strategist Agent**: Designs personalized campaigns
 - **Executor Agent**: Orchestrates multi-channel outreach via Arcade
 
 ### Core Capabilities
-- 🔍 **Intelligent Prospect Discovery**: Web scraping and data mining
-- 💎 **Deep Enrichment**: Company, social, and intent data gathering
-- 📊 **Smart Scoring**: AI-driven engagement and fit scoring
-- 📧 **Personalized Campaigns**: Multi-channel outreach automation
-- 📈 **Real-time Analytics**: Campaign performance and ROI tracking
-- 🔄 **Workflow Automation**: Mastra-powered orchestration
+- **Intelligent Prospect Discovery**: Find and qualify prospects automatically
+- **AI-Powered Enrichment**: Gather comprehensive data from multiple sources
+- **Smart Scoring**: Multi-factor scoring based on fit, engagement, and timing
+- **Campaign Automation**: Create and execute personalized outreach campaigns
+- **Real-time Analytics**: Track performance and optimize strategies
 
-### Technical Features
-- Real-time updates via WebSocket
-- JWT-based authentication
-- Rate limiting and security middleware
-- RESTful API with comprehensive endpoints
-- Docker support for easy deployment
-- Responsive dark-themed UI
+### Sponsor Integrations
+- **BrightData**: Web scraping and data discovery
+- **LlamaIndex**: AI-powered analysis and personalization
+- **Arcade**: Multi-channel campaign execution
+- **Mastra**: Workflow orchestration with AI
+- **Supabase**: Real-time database and authentication
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 ### Backend
-- **Node.js** with Express.js
-- **PostgreSQL** via Supabase
-- **Mastra** for workflow orchestration
-- **Socket.io** for real-time updates
-- **JWT** for authentication
+- Node.js + Express
+- PostgreSQL (via Supabase)
+- OpenAI GPT-4 for AI agents
+- Mastra for workflow orchestration
+- Redis for caching (optional)
+- WebSocket for real-time updates
 
 ### Frontend
-- **React** with Vite
-- **React Router** for navigation
-- **Tailwind CSS** for styling
-- **Glass morphism** design system
-- **Chart.js** for analytics
+- React + Vite
+- Tailwind CSS with dark theme
+- Glass morphism UI design
+- Axios for API calls
+- React Router for navigation
 
-### AI & Integrations
-- **BrightData** for web scraping
-- **LlamaIndex** for AI analysis
-- **Arcade** for campaign execution
-- **Supabase** for database and auth
+## Installation
 
-## 📋 Prerequisites
-
-- Node.js 18+ and npm
-- PostgreSQL database (via Supabase)
-- API keys for:
+### Prerequisites
+- Node.js 18+
+- PostgreSQL (or Supabase account)
+- API Keys for:
+  - OpenAI
   - BrightData
   - LlamaIndex
   - Arcade
   - Supabase
-  - Mastra
 
-## 🔧 Installation
+### Setup
 
-### Quick Setup
-
-1. Clone the repository:
+1. **Clone the repository**
 ```bash
-git clone https://github.com/yourusername/artemis.git
+git clone <repository-url>
 cd artemis
 ```
 
-2. Run the setup script:
-```bash
-chmod +x scripts/setup.sh
-./scripts/setup.sh
-```
-
-3. Configure environment variables:
-```bash
-cp .env.example .env
-# Edit .env with your API keys
-```
-
-### Manual Setup
-
-1. Install dependencies:
+2. **Install dependencies**
 ```bash
 # Root dependencies
 npm install
 
 # Backend dependencies
-cd backend && npm install && cd ..
+cd backend
+npm install
 
 # Frontend dependencies
-cd frontend && npm install && cd ..
+cd ../frontend
+npm install
 ```
 
-2. Set up the database:
-```sql
--- Run the migration in your Supabase project
--- Copy contents from database/migrations/001_initial_schema.sql
-```
-
-3. Configure environment variables in `.env`
-
-## 🚀 Running the Application
-
-### Development Mode
-
-Start both frontend and backend:
+3. **Configure environment variables**
 ```bash
+cp .env.example .env
+# Edit .env with your API keys
+```
+
+4. **Run database migrations**
+```bash
+cd database
+psql $DATABASE_URL < migrations/001_initial_schema.sql
+```
+
+5. **Start the development servers**
+
+Backend:
+```bash
+cd backend
 npm run dev
 ```
 
-Or run separately:
+Frontend:
 ```bash
-# Backend only (port 3001)
-npm run dev:backend
-
-# Frontend only (port 5173)
-npm run dev:frontend
+cd frontend
+npm run dev
 ```
 
-### Production Mode
+## Quick Start
 
-Using Docker:
-```bash
-# Build and start containers
-npm run docker:up
+1. **Access the application**
+   - Frontend: http://localhost:5173
+   - Backend API: http://localhost:3000
 
-# Stop containers
-npm run docker:down
+2. **Initial Setup**
+   - Navigate to Settings
+   - Configure your API keys
+   - Set preferences
+
+3. **Find Prospects**
+   - Go to Prospects page
+   - Use the search functionality
+   - Import or manually add prospects
+
+4. **Enrich & Score**
+   - Select prospects to enrich
+   - AI agents will gather data and calculate scores
+
+5. **Create Campaigns**
+   - Navigate to Campaigns
+   - Design personalized outreach
+   - Launch multi-channel campaigns
+
+## Project Structure
+
+```
+artemis/
+├── backend/
+│   ├── src/
+│   │   ├── agents/         # AI agent implementations
+│   │   ├── routes/         # API endpoints
+│   │   ├── services/       # External service integrations
+│   │   ├── workflows/      # Mastra workflows
+│   │   ├── middleware/     # Auth, rate limiting, etc.
+│   │   └── server.js       # Express server
+│   └── config/
+├── frontend/
+│   ├── src/
+│   │   ├── components/     # Reusable UI components
+│   │   ├── pages/          # Page components
+│   │   ├── services/       # API services
+│   │   └── App.jsx         # Main app component
+│   └── public/
+├── database/
+│   ├── migrations/         # SQL migrations
+│   └── seeds/              # Demo data
+├── docker-compose.yml      # Docker configuration
+└── README.md
 ```
 
-Manual production build:
-```bash
-# Build frontend
-cd frontend && npm run build
-
-# Start production server
-NODE_ENV=production npm start
-```
-
-## 📊 Database Setup
-
-### Seed Demo Data
-
-Generate sample data for testing:
-```bash
-npm run seed
-
-# Or clean and seed
-npm run seed:clean
-```
-
-### Database Schema
-
-The platform uses the following main tables:
-- `prospects`: Lead information and status
-- `enrichment_data`: Company and social data
-- `engagement_scores`: AI-calculated scores
-- `outreach_campaigns`: Campaign definitions
-- `messages`: Sent messages and status
-- `interactions`: Prospect engagement tracking
-- `agent_logs`: AI agent activity logs
-
-## � API Endpoints
+## API Endpoints
 
 ### Prospects
-- `GET /api/prospects` - List all prospects
+- `GET /api/prospects` - List prospects with filtering
 - `POST /api/prospects` - Create new prospect
-- `POST /api/prospects/discover` - AI-powered discovery
 - `POST /api/prospects/:id/enrich` - Enrich prospect data
-- `POST /api/prospects/:id/analyze` - Analyze and score
+- `GET /api/prospects/:id` - Get prospect details
 
 ### Campaigns
 - `GET /api/campaigns` - List campaigns
 - `POST /api/campaigns` - Create campaign
-- `POST /api/campaigns/execute` - Execute campaign
+- `POST /api/campaigns/:id/launch` - Launch campaign
+- `GET /api/campaigns/:id/stats` - Campaign statistics
 
 ### Analytics
-- `GET /api/analytics` - Dashboard metrics
-- `GET /api/analytics/agents` - Agent performance
-- `GET /api/analytics/funnel` - Conversion funnel
-- `GET /api/analytics/content` - Content performance
-- `GET /api/analytics/roi` - ROI metrics
+- `GET /api/analytics` - Overall analytics
+- `GET /api/analytics/dashboard` - Dashboard metrics
 
-## 🎨 UI Components
+## Docker Deployment
 
-The frontend features a modern dark theme with glass morphism effects:
-
-- **Dashboard**: Real-time metrics and activity feed
-- **Prospects**: Table view with filters and detail modal
-- **Campaigns**: Campaign builder and management
-- **Analytics**: Interactive charts and reports
-- **Settings**: Configuration and preferences
-
-## � Security
-
-- JWT-based authentication
-- Rate limiting on all endpoints
-- Input validation and sanitization
-- Environment variable management
-- CORS configuration
-- SQL injection prevention via Supabase
-
-## 🧪 Testing
-
-Run tests:
 ```bash
-# All tests
+# Build and run with Docker Compose
+docker-compose up -d
+
+# View logs
+docker-compose logs -f
+
+# Stop services
+docker-compose down
+```
+
+## Security
+
+- JWT authentication for API access
+- Rate limiting on all endpoints
+- Environment variable encryption
+- Secure WebSocket connections
+- Input validation and sanitization
+
+## Testing
+
+```bash
+# Run backend tests
+cd backend
 npm test
 
-# Backend tests
-npm run test:backend
-
-# Frontend tests
-npm run test:frontend
+# Run frontend tests
+cd frontend
+npm test
 ```
 
-## � Deployment
+## Database Schema
 
-### Using Docker
+The platform uses the following main tables:
+- `prospects` - Prospect information
+- `enrichment_data` - Enriched data from various sources
+- `engagement_scores` - AI-calculated scores
+- `outreach_campaigns` - Campaign definitions
+- `messages` - Outreach messages
+- `interactions` - Prospect interactions
+- `agent_logs` - AI agent activity logs
 
-1. Build images:
-```bash
-docker-compose build
-```
+## Production Deployment
 
-2. Run containers:
-```bash
-docker-compose up -d
-```
+1. Set production environment variables
+2. Build the frontend: `npm run build`
+3. Use PM2 or similar for backend process management
+4. Configure Nginx for reverse proxy
+5. Set up SSL certificates
+6. Enable monitoring and logging
 
-### Manual Deployment
+## License
 
-1. Build frontend:
-```bash
-cd frontend && npm run build
-```
+This project is proprietary software.
 
-2. Set production environment:
-```bash
-export NODE_ENV=production
-```
+## Support
 
-3. Start server:
-```bash
-npm start
-```
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
-## � License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## 🙏 Acknowledgments
-
-- Built with sponsor APIs from BrightData, LlamaIndex, Arcade, and Mastra
-- UI inspired by modern glass morphism design trends
-- Multi-agent architecture based on best practices in AI orchestration
-
-## � Support
-
-For issues and questions:
-- GitHub Issues: [Create an issue](https://github.com/yourusername/artemis/issues)
-- Documentation: [View docs](https://artemis-docs.example.com)
-- Email: support@artemis.example.com
+For issues or questions, please contact the development team.
 
 ---
 
-Built with ❤️ by the ARTEMIS team
+Built with AI-powered development

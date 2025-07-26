@@ -8,7 +8,7 @@ const __dirname = dirname(__filename);
 // Load environment variables
 dotenv.config({ path: join(__dirname, '../../.env') });
 
-export const config = {
+const config = {
   // Server
   port: process.env.PORT || 3000,
   nodeEnv: process.env.NODE_ENV || 'development',
@@ -29,6 +29,10 @@ export const config = {
     baseUrl: 'https://api.brightdata.com/v2'
   },
   
+  openai: {
+    apiKey: process.env.OPENAI_API_KEY
+  },
+  
   supabase: {
     url: process.env.SUPABASE_URL,
     anonKey: process.env.SUPABASE_ANON_KEY,
@@ -36,7 +40,7 @@ export const config = {
   },
   
   mastra: {
-    apiKey: process.env.MASTRA_API_KEY,
+    apiKey: process.env.OPENAI_API_KEY, // Mastra uses OpenAI for LLM
     webhookSecret: process.env.MASTRA_WEBHOOK_SECRET
   },
   
@@ -63,3 +67,5 @@ export const config = {
     format: process.env.LOG_FORMAT || 'json'
   }
 };
+
+export default config;

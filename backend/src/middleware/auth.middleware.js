@@ -1,6 +1,6 @@
-const jwt = require('jsonwebtoken')
-const config = require('../../config')
-const logger = require('../utils/logger')
+import jwt from 'jsonwebtoken';
+import config from '../../config/index.js';
+import { logger } from '../utils/logger.js';
 
 /**
  * Authentication middleware to verify JWT tokens
@@ -20,7 +20,7 @@ const authenticate = async (req, res, next) => {
 
     try {
       // Verify token
-      const decoded = jwt.verify(token, config.jwtSecret)
+      const decoded = jwt.verify(token, config.jwt.secret)
       
       // Add user info to request
       req.user = {
@@ -99,8 +99,8 @@ const generateToken = (user) => {
     role: user.role || 'user'
   }
 
-  return jwt.sign(payload, config.jwtSecret, {
-    expiresIn: '7d'
+  return jwt.sign(payload, config.jwt.secret, {
+    expiresIn: config.jwt.expiresIn
   })
 }
 
@@ -117,7 +117,7 @@ const optionalAuth = async (req, res, next) => {
   const token = authHeader.substring(7)
 
   try {
-    const decoded = jwt.verify(token, config.jwtSecret)
+    const decoded = jwt.verify(token, config.jwt.secret)
     req.user = {
       id: decoded.userId,
       email: decoded.email,
@@ -131,9 +131,9 @@ const optionalAuth = async (req, res, next) => {
   next()
 }
 
-module.exports = {
+export {
   authenticate,
   authorize,
   generateToken,
   optionalAuth
-}
+};

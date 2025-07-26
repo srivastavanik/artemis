@@ -51,6 +51,21 @@ app.use((req, res, next) => {
   next();
 });
 
+// Root endpoint
+app.get('/', (req, res) => {
+  res.json({
+    success: true,
+    message: 'ARTEMIS AI-Powered Sales Intelligence Platform API',
+    version: '1.0.0',
+    endpoints: {
+      health: '/health',
+      prospects: '/api/prospects',
+      campaigns: '/api/campaigns',
+      analytics: '/api/analytics'
+    }
+  });
+});
+
 // Health check endpoint
 app.get('/health', (req, res) => {
   res.json({

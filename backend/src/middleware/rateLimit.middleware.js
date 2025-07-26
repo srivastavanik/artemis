@@ -1,5 +1,5 @@
-const rateLimit = require('express-rate-limit')
-const logger = require('../utils/logger')
+import rateLimit from 'express-rate-limit';
+import { logger } from '../utils/logger.js';
 
 /**
  * Create rate limiter for API endpoints
@@ -97,7 +97,7 @@ const withSkip = (limiter) => {
   }
 }
 
-module.exports = {
+export default {
   general: withSkip(rateLimiters.general),
   auth: withSkip(rateLimiters.auth),
   enrichment: withSkip(rateLimiters.enrichment),
@@ -105,4 +105,4 @@ module.exports = {
   analytics: withSkip(rateLimiters.analytics),
   agents: withSkip(rateLimiters.agents),
   createCustomLimiter: createRateLimiter
-}
+};

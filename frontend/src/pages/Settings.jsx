@@ -1,354 +1,197 @@
-import React from 'react'
-import { motion } from 'framer-motion'
-import { 
-  Settings as SettingsIcon, 
-  User, 
-  Bell, 
-  Shield, 
-  Palette, 
-  Database,
-  Key,
-  Mail,
-  Globe,
-  Save,
-  RefreshCw
-} from 'lucide-react'
+import { useState, useEffect } from 'react';
+import axios from 'axios';
 
-const Settings = () => {
-  const [activeTab, setActiveTab] = React.useState('profile')
-  const [settings, setSettings] = React.useState({
-    profile: {
-      name: 'John Doe',
-      email: 'john.doe@artemis.ai',
-      company: 'Artemis AI',
-      role: 'Sales Manager'
-    },
-    notifications: {
-      emailAlerts: true,
-      prospectUpdates: true,
-      campaignReports: true,
-      systemNotifications: false
-    },
-    integrations: {
-      brightdata: { connected: true, apiKey: '•••••••••••••' },
-      llamaindex: { connected: true, apiKey: '•••••••••••••' },
-      arcade: { connected: true, apiKey: '•••••••••••••' },
-      mastra: { connected: false, apiKey: '' }
+function Settings() {
+  const [apiKeys, setApiKeys] = useState({
+    brightdata: '',
+    llamaindex: '',
+    arcade: '',
+    openai: ''
+  });
+  const [preferences, setPreferences] = useState({
+    emailNotifications: true,
+    autoEnrichment: false,
+    defaultCampaignType: 'email'
+  });
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    fetchSettings();
+  }, []);
+
+  const fetchSettings = async () => {
+    try {
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/settings`);
+      if (response.data.apiKeys) {
+        setApiKeys(response.data.apiKeys);
+      }
+      if (response.data.preferences) {
+        setPreferences(response.data.preferences);
+      }
+    } catch (error) {
+      console.error('Failed to fetch settings:', error);
+    } finally {
+      setLoading(false);
     }
-  })
+  };
 
-  const tabs = [
-    { id: 'profile', label: 'Profile', icon: User },
-    { id: 'notifications', label: 'Notifications', icon: Bell },
-    { id: 'integrations', label: 'Integrations', icon: Database },
-    { id: 'security', label: 'Security', icon: Shield },
-    { id: 'appearance', label: 'Appearance', icon: Palette }
-  ]
+  const handleSaveApiKeys = async () => {
+    setSaving(true);
+    try {
+      await axios.put(`${import.meta.env.VITE_API_URL}/settings/api-keys`, apiKeys);
+      alert('API keys updated successfully');
+    } catch (error) {
+      console.error('Failed to save API keys:', error);
+      alert('Failed to save API keys');
+    } finally {
+      setSaving(false);
+    }
+  };
 
-  const handleSave = () => {
-    console.log('Saving settings:', settings)
+  const handleSavePreferences = async () => {
+    setSaving(true);
+    try {
+      await axios.put(`${import.meta.env.VITE_API_URL}/settings/preferences`, preferences);
+      alert('Preferences updated successfully');
+    } catch (error) {
+      console.error('Failed to save preferences:', error);
+      alert('Failed to save preferences');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-neutral-500">Loading...</div>
+      </div>
+    );
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      className="space-y-6"
-    >
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold">Settings</h1>
-        <p className="text-text-secondary mt-2">
-          Manage your account settings and preferences.
-        </p>
-      </div>
+    <div className="space-y-6">
+      <h1 className="text-2xl font-semibold">Settings</h1>
 
-      <div className="flex gap-6">
-        {/* Sidebar */}
-        <div className="w-64">
-          <nav className="space-y-1">
-            {tabs.map((tab) => {
-              const Icon = tab.icon
-              const isActive = activeTab === tab.id
-              
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`
-                    w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all
-                    ${isActive 
-                      ? 'bg-primary text-white' 
-                      : 'hover:bg-bg-glass text-text-secondary hover:text-text-primary'
-                    }
-                  `}
-                >
-                  <Icon className="w-5 h-5" />
-                  <span className="font-medium">{tab.label}</span>
-                </button>
-              )
-            })}
-          </nav>
-        </div>
-
-        {/* Content */}
-        <div className="flex-1">
-          <div className="glass-card">
-            {activeTab === 'profile' && (
-              <div className="space-y-6">
-                <h2 className="text-xl font-semibold">Profile Settings</h2>
-                
-                <div className="grid grid-cols-2 gap-6">
-                  <div>
-                    <label className="label">Full Name</label>
-                    <input
-                      type="text"
-                      value={settings.profile.name}
-                      onChange={(e) => setSettings({
-                        ...settings,
-                        profile: { ...settings.profile, name: e.target.value }
-                      })}
-                      className="input w-full"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="label">Email Address</label>
-                    <input
-                      type="email"
-                      value={settings.profile.email}
-                      onChange={(e) => setSettings({
-                        ...settings,
-                        profile: { ...settings.profile, email: e.target.value }
-                      })}
-                      className="input w-full"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="label">Company</label>
-                    <input
-                      type="text"
-                      value={settings.profile.company}
-                      onChange={(e) => setSettings({
-                        ...settings,
-                        profile: { ...settings.profile, company: e.target.value }
-                      })}
-                      className="input w-full"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="label">Role</label>
-                    <input
-                      type="text"
-                      value={settings.profile.role}
-                      onChange={(e) => setSettings({
-                        ...settings,
-                        profile: { ...settings.profile, role: e.target.value }
-                      })}
-                      className="input w-full"
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {activeTab === 'notifications' && (
-              <div className="space-y-6">
-                <h2 className="text-xl font-semibold">Notification Preferences</h2>
-                
-                <div className="space-y-4">
-                  <label className="flex items-center justify-between p-4 rounded-lg bg-bg-glass cursor-pointer">
-                    <div className="flex items-center gap-3">
-                      <Mail className="w-5 h-5 text-primary" />
-                      <div>
-                        <p className="font-medium">Email Alerts</p>
-                        <p className="text-sm text-text-tertiary">Receive important updates via email</p>
-                      </div>
-                    </div>
-                    <input
-                      type="checkbox"
-                      checked={settings.notifications.emailAlerts}
-                      onChange={(e) => setSettings({
-                        ...settings,
-                        notifications: { ...settings.notifications, emailAlerts: e.target.checked }
-                      })}
-                      className="toggle"
-                    />
-                  </label>
-                  
-                  <label className="flex items-center justify-between p-4 rounded-lg bg-bg-glass cursor-pointer">
-                    <div className="flex items-center gap-3">
-                      <User className="w-5 h-5 text-accent" />
-                      <div>
-                        <p className="font-medium">Prospect Updates</p>
-                        <p className="text-sm text-text-tertiary">Get notified when prospects engage</p>
-                      </div>
-                    </div>
-                    <input
-                      type="checkbox"
-                      checked={settings.notifications.prospectUpdates}
-                      onChange={(e) => setSettings({
-                        ...settings,
-                        notifications: { ...settings.notifications, prospectUpdates: e.target.checked }
-                      })}
-                      className="toggle"
-                    />
-                  </label>
-                  
-                  <label className="flex items-center justify-between p-4 rounded-lg bg-bg-glass cursor-pointer">
-                    <div className="flex items-center gap-3">
-                      <SettingsIcon className="w-5 h-5 text-warning" />
-                      <div>
-                        <p className="font-medium">Campaign Reports</p>
-                        <p className="text-sm text-text-tertiary">Weekly campaign performance summaries</p>
-                      </div>
-                    </div>
-                    <input
-                      type="checkbox"
-                      checked={settings.notifications.campaignReports}
-                      onChange={(e) => setSettings({
-                        ...settings,
-                        notifications: { ...settings.notifications, campaignReports: e.target.checked }
-                      })}
-                      className="toggle"
-                    />
-                  </label>
-                </div>
-              </div>
-            )}
-
-            {activeTab === 'integrations' && (
-              <div className="space-y-6">
-                <h2 className="text-xl font-semibold">API Integrations</h2>
-                
-                <div className="space-y-4">
-                  {Object.entries(settings.integrations).map(([key, integration]) => (
-                    <div key={key} className="p-4 rounded-lg bg-bg-glass">
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center gap-3">
-                          <div className={`w-10 h-10 rounded-lg ${integration.connected ? 'bg-success/10' : 'bg-bg-tertiary'} flex items-center justify-center`}>
-                            <Globe className={`w-5 h-5 ${integration.connected ? 'text-success' : 'text-text-tertiary'}`} />
-                          </div>
-                          <div>
-                            <p className="font-medium capitalize">{key}</p>
-                            <p className="text-sm text-text-tertiary">
-                              {integration.connected ? 'Connected' : 'Not connected'}
-                            </p>
-                          </div>
-                        </div>
-                        
-                        <button className={`btn ${integration.connected ? 'btn-ghost' : 'btn-primary'}`}>
-                          {integration.connected ? 'Disconnect' : 'Connect'}
-                        </button>
-                      </div>
-                      
-                      {integration.connected && (
-                        <div className="mt-3">
-                          <label className="label">API Key</label>
-                          <div className="flex items-center gap-2">
-                            <input
-                              type="password"
-                              value={integration.apiKey}
-                              readOnly
-                              className="input flex-1"
-                            />
-                            <button className="btn btn-secondary">
-                              <RefreshCw className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {activeTab === 'security' && (
-              <div className="space-y-6">
-                <h2 className="text-xl font-semibold">Security Settings</h2>
-                
-                <div className="p-4 rounded-lg bg-warning/10 border border-warning/20">
-                  <p className="text-warning font-medium">Two-Factor Authentication</p>
-                  <p className="text-sm text-text-secondary mt-1">
-                    Add an extra layer of security to your account
-                  </p>
-                  <button className="btn btn-warning mt-3">
-                    Enable 2FA
-                  </button>
-                </div>
-                
-                <div>
-                  <h3 className="font-medium mb-3">Change Password</h3>
-                  <div className="space-y-4">
-                    <div>
-                      <label className="label">Current Password</label>
-                      <input type="password" className="input w-full" />
-                    </div>
-                    <div>
-                      <label className="label">New Password</label>
-                      <input type="password" className="input w-full" />
-                    </div>
-                    <div>
-                      <label className="label">Confirm New Password</label>
-                      <input type="password" className="input w-full" />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {activeTab === 'appearance' && (
-              <div className="space-y-6">
-                <h2 className="text-xl font-semibold">Appearance Settings</h2>
-                
-                <div>
-                  <h3 className="font-medium mb-3">Theme</h3>
-                  <div className="grid grid-cols-3 gap-3">
-                    {['Dark', 'Light', 'System'].map((theme) => (
-                      <button
-                        key={theme}
-                        className={`p-4 rounded-lg border-2 transition-all ${
-                          theme === 'Dark' 
-                            ? 'border-primary bg-primary/10' 
-                            : 'border-border-secondary hover:border-border-primary'
-                        }`}
-                      >
-                        <p className="font-medium">{theme}</p>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                
-                <div>
-                  <h3 className="font-medium mb-3">Accent Color</h3>
-                  <div className="flex items-center gap-3">
-                    {['#6366f1', '#8b5cf6', '#3b82f6', '#10b981', '#f59e0b', '#ef4444'].map((color) => (
-                      <button
-                        key={color}
-                        className="w-10 h-10 rounded-lg"
-                        style={{ backgroundColor: color }}
-                      />
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
+      {/* API Configuration */}
+      <div className="card">
+        <h2 className="text-lg font-semibold mb-4">API Configuration</h2>
+        <div className="space-y-4">
+          <div className="form-group">
+            <label className="form-label">BrightData API Key</label>
+            <input
+              type="password"
+              className="input-field"
+              value={apiKeys.brightdata}
+              onChange={(e) => setApiKeys({...apiKeys, brightdata: e.target.value})}
+              placeholder="Enter your BrightData API key"
+            />
           </div>
           
-          {/* Save Button */}
-          <div className="mt-6 flex justify-end">
-            <button onClick={handleSave} className="btn btn-primary">
-              <Save className="w-4 h-4" />
-              Save Changes
-            </button>
+          <div className="form-group">
+            <label className="form-label">LlamaIndex API Key</label>
+            <input
+              type="password"
+              className="input-field"
+              value={apiKeys.llamaindex}
+              onChange={(e) => setApiKeys({...apiKeys, llamaindex: e.target.value})}
+              placeholder="Enter your LlamaIndex API key"
+            />
           </div>
+          
+          <div className="form-group">
+            <label className="form-label">Arcade API Key</label>
+            <input
+              type="password"
+              className="input-field"
+              value={apiKeys.arcade}
+              onChange={(e) => setApiKeys({...apiKeys, arcade: e.target.value})}
+              placeholder="Enter your Arcade API key"
+            />
+          </div>
+          
+          <div className="form-group">
+            <label className="form-label">OpenAI API Key (for AI agents)</label>
+            <input
+              type="password"
+              className="input-field"
+              value={apiKeys.openai}
+              onChange={(e) => setApiKeys({...apiKeys, openai: e.target.value})}
+              placeholder="Enter your OpenAI API key"
+            />
+          </div>
+          
+          <button
+            onClick={handleSaveApiKeys}
+            disabled={saving}
+            className="btn-primary"
+          >
+            {saving ? 'Saving...' : 'Save API Keys'}
+          </button>
         </div>
       </div>
-    </motion.div>
-  )
+
+      {/* Preferences */}
+      <div className="card">
+        <h2 className="text-lg font-semibold mb-4">Preferences</h2>
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="font-medium">Email Notifications</div>
+              <div className="text-sm text-neutral-600">Receive updates about campaign performance</div>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                className="sr-only peer"
+                checked={preferences.emailNotifications}
+                onChange={(e) => setPreferences({...preferences, emailNotifications: e.target.checked})}
+              />
+              <div className="w-11 h-6 bg-neutral-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-neutral-900"></div>
+            </label>
+          </div>
+          
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="font-medium">Auto-Enrichment</div>
+              <div className="text-sm text-neutral-600">Automatically enrich new prospects</div>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                className="sr-only peer"
+                checked={preferences.autoEnrichment}
+                onChange={(e) => setPreferences({...preferences, autoEnrichment: e.target.checked})}
+              />
+              <div className="w-11 h-6 bg-neutral-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-neutral-900"></div>
+            </label>
+          </div>
+          
+          <div className="form-group">
+            <label className="form-label">Default Campaign Type</label>
+            <select
+              className="input-field"
+              value={preferences.defaultCampaignType}
+              onChange={(e) => setPreferences({...preferences, defaultCampaignType: e.target.value})}
+            >
+              <option value="email">Email</option>
+              <option value="sms">SMS</option>
+              <option value="multi">Multi-channel</option>
+            </select>
+          </div>
+          
+          <button
+            onClick={handleSavePreferences}
+            disabled={saving}
+            className="btn-primary"
+          >
+            {saving ? 'Saving...' : 'Save Preferences'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
-export default Settings
+export default Settings;

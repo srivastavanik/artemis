@@ -1,19 +1,28 @@
 import { createClient } from '@supabase/supabase-js';
-import { config } from '../../config/index.js';
+import config from '../../config/index.js';
 import { logger } from '../utils/logger.js';
 
 class SupabaseService {
   constructor() {
-    this.client = createClient(
-      config.supabase.url,
-      config.supabase.serviceKey,
-      {
-        auth: {
-          autoRefreshToken: true,
-          persistSession: false
+    // Initialize with null client if credentials are missing
+    const url = config.supabase.url;
+    const key = config.supabase.serviceKey || config.supabase.anonKey;
+    
+    if (!url || url === 'your_supabase_url_here' || !key || key === 'your_supabase_anon_key_here') {
+      logger.warn('Supabase credentials not configured. Running in demo mode.');
+      this.client = null;
+    } else {
+      this.client = createClient(
+        url,
+        key,
+        {
+          auth: {
+            autoRefreshToken: true,
+            persistSession: false
+          }
         }
-      }
-    );
+      );
+    }
   }
 
   /**
@@ -21,6 +30,16 @@ class SupabaseService {
    */
   async createProspect(prospectData) {
     try {
+      if (!this.client) {
+        // Demo mode - return mock data
+        return {
+          id: Date.now().toString(),
+          ...prospectData,
+          discovered_at: new Date().toISOString(),
+          created_at: new Date().toISOString()
+        };
+      }
+
       const { data, error } = await this.client
         .from('prospects')
         .insert({
@@ -53,6 +72,19 @@ class SupabaseService {
    */
   async getProspectById(id) {
     try {
+      if (!this.client) {
+        // Demo mode - return mock data
+        return {
+          id,
+          email: 'demo@example.com',
+          first_name: 'Demo',
+          last_name: 'User',
+          company_name: 'Demo Company',
+          company_domain: 'demo.com',
+          discovered_at: new Date().toISOString()
+        };
+      }
+
       const { data, error } = await this.client
         .from('prospects')
         .select('*')
@@ -72,6 +104,16 @@ class SupabaseService {
    */
   async searchProspects(filters = {}) {
     try {
+      if (!this.client) {
+        // Demo mode - return empty result
+        return {
+          data: [],
+          total: 0,
+          limit: filters.limit || 50,
+          offset: filters.offset || 0
+        };
+      }
+
       let query = this.client.from('prospects').select('*');
 
       // Apply filters

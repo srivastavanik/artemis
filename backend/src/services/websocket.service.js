@@ -1,7 +1,7 @@
-const { Server } = require('socket.io')
-const jwt = require('jsonwebtoken')
-const config = require('../../config')
-const logger = require('../utils/logger')
+import { Server } from 'socket.io';
+import jwt from 'jsonwebtoken';
+import config from '../../config/index.js';
+import { logger } from '../utils/logger.js';
 
 class WebSocketService {
   constructor() {
@@ -29,7 +29,7 @@ class WebSocketService {
           return next(new Error('Authentication required'))
         }
 
-        const decoded = jwt.verify(token, config.jwtSecret)
+        const decoded = jwt.verify(token, config.jwt.secret)
         socket.userId = decoded.userId
         socket.userEmail = decoded.email
         socket.userRole = decoded.role
@@ -251,6 +251,6 @@ class WebSocketService {
 }
 
 // Create singleton instance
-const websocketService = new WebSocketService()
+const websocketService = new WebSocketService();
 
-module.exports = websocketService
+export default websocketService;

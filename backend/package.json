@@ -1,0 +1,38 @@
+{
+  "name": "artemis-backend",
+  "version": "1.0.0",
+  "description": "ARTEMIS AI-Powered Sales Intelligence Platform - Backend",
+  "type": "module",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "test": "jest"
+  },
+  "keywords": [
+    "sales",
+    "ai",
+    "automation",
+    "crm"
+  ],
+  "author": "ARTEMIS Team",
+  "license": "MIT",
+  "dependencies": {
+    "@mastra/core": "^0.1.0",
+    "@supabase/supabase-js": "^2.38.4",
+    "axios": "^1.6.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "express-rate-limit": "^7.1.5",
+    "jsonwebtoken": "^9.0.2",
+    "llamaindex": "^0.0.45",
+    "socket.io": "^4.7.2",
+    "winston": "^3.11.0",
+    "@faker-js/faker": "^8.3.1"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "nodemon": "^3.0.2"
+  }
+}
