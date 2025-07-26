@@ -1,248 +1,432 @@
-import { useState, useEffect } from 'react';
-import campaignsService from '../services/campaigns.service';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { campaignService } from '../services/campaigns.service';
+import { prospectService } from '../services/prospects.service';
+import { websocketService } from '../services/websocket.service';
 
-function Campaigns() {
+const Campaigns = () => {
+  const navigate = useNavigate();
   const [campaigns, setCampaigns] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selectedChannel, setSelectedChannel] = useState('email');
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [selectedCampaign, setSelectedCampaign] = useState(null);
+  const [filters, setFilters] = useState({
+    status: 'all',
+    channel: 'all'
+  });
   const [newCampaign, setNewCampaign] = useState({
     name: '',
     description: '',
-    targetAudience: ''
+    prospectCriteria: {
+      industry: '',
+      companySize: '',
+      score_min: 0
+    },
+    channels: [],
+    messageTemplate: '',
+    schedule: {
+      startDate: '',
+      endDate: '',
+      timezone: 'UTC'
+    }
   });
 
   useEffect(() => {
     fetchCampaigns();
-  }, []);
+
+    // Listen for real-time updates
+    const unsubscribe = websocketService.subscribe('campaign_update', (data) => {
+      setCampaigns(prev => prev.map(c => c.id === data.id ? data : c));
+    });
+
+    return () => unsubscribe();
+  }, [filters]);
 
   const fetchCampaigns = async () => {
     try {
-      const response = await campaignsService.getCampaigns();
+      setLoading(true);
+      const response = await campaignService.list(filters);
       setCampaigns(response.data || []);
     } catch (error) {
       console.error('Failed to fetch campaigns:', error);
-      // Demo data
-      setCampaigns([
-        { id: 1, name: 'Q1 Enterprise Outreach', status: 'active', prospects: 450, sent: 1200, opened: 780, replied: 95 },
-        { id: 2, name: 'Product Launch Campaign', status: 'scheduled', prospects: 280, sent: 0, opened: 0, replied: 0 },
-        { id: 3, name: 'Holiday Promo 2024', status: 'completed', prospects: 650, sent: 1950, opened: 1100, replied: 120 },
-      ]);
     } finally {
       setLoading(false);
     }
   };
-  
+
   const handleCreateCampaign = async () => {
-    if (!newCampaign.name || !newCampaign.targetAudience) return;
-    
     try {
-      const campaignData = {
-        name: newCampaign.name,
-        description: newCampaign.description,
-        targetCriteria: {
-          titles: newCampaign.targetAudience.split(',').map(t => t.trim())
-        },
-        channels: [selectedChannel],
-        messageTemplates: {
-          [selectedChannel]: {
-            template: `Hi {{firstName}}, I noticed you're the {{jobTitle}} at {{company}} and wanted to reach out...`
-          }
-        }
-      };
-      
-      await campaignsService.createCampaign(campaignData);
-      fetchCampaigns();
-      
-      // Reset form
-      setNewCampaign({ name: '', description: '', targetAudience: '' });
+      const response = await campaignService.create(newCampaign);
+      setCampaigns(prev => [response.data, ...prev]);
+      setShowCreateModal(false);
+      navigate(`/campaigns/${response.data.id}`);
     } catch (error) {
       console.error('Failed to create campaign:', error);
+    }
+  };
+
+  const handleExecuteCampaign = async (campaignId) => {
+    try {
+      await campaignService.execute({ campaignId });
+      fetchCampaigns();
+    } catch (error) {
+      console.error('Failed to execute campaign:', error);
     }
   };
 
   const getStatusColor = (status) => {
     switch (status) {
       case 'active': return 'text-green-400';
-      case 'scheduled': return 'text-yellow-400';
-      case 'completed': return 'text-gray-400';
+      case 'paused': return 'text-yellow-400';
+      case 'completed': return 'text-blue-400';
+      case 'draft': return 'text-gray-400';
+      case 'pending_approval': return 'text-orange-400';
       default: return 'text-gray-400';
     }
   };
 
-  const channels = [
-    { id: 'email', name: 'Email', icon: '✉️' },
-    { id: 'linkedin', name: 'LinkedIn', icon: '💼' },
-    { id: 'twitter', name: 'Twitter', icon: '🐦' },
-    { id: 'phone', name: 'Phone', icon: '📱' },
-  ];
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[600px]">
-        <div className="text-gray-400 font-extralight">Loading campaigns...</div>
-      </div>
-    );
-  }
+  const pendingApprovalCount = campaigns.filter(c => c.status === 'pending_approval').length;
 
   return (
-    <div className="container mx-auto px-6 py-16">
-      <div className="animate-fade-in">
+    <div className="min-h-screen bg-black">
+      <div className="container mx-auto px-6 py-8">
         {/* Header */}
-        <div className="mb-12">
-          <h1 className="text-4xl md:text-5xl font-extralight tracking-tighter mb-4">
-            <span className="gradient-text">Campaign</span> Builder
-          </h1>
-          <p className="text-gray-400 text-lg font-extralight">
-            Multi-channel orchestration powered by AI
-          </p>
-        </div>
-
-        {/* Create Campaign */}
-        <div className="card mb-12">
-          <h3 className="text-2xl font-light mb-6">Create New Campaign</h3>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-            <div>
-              <label className="block text-sm text-gray-400 mb-2 font-light">Campaign Name</label>
-              <input
-                type="text"
-                className="input-field"
-                placeholder="e.g., Q2 Enterprise Outreach"
-                value={newCampaign.name}
-                onChange={(e) => setNewCampaign({ ...newCampaign, name: e.target.value })}
-              />
-            </div>
-            <div>
-              <label className="block text-sm text-gray-400 mb-2 font-light">Target Audience</label>
-              <input
-                type="text"
-                className="input-field"
-                placeholder="e.g., VP Sales at SaaS companies"
-                value={newCampaign.targetAudience}
-                onChange={(e) => setNewCampaign({ ...newCampaign, targetAudience: e.target.value })}
-              />
-            </div>
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h1 className="text-3xl font-light tracking-tight text-white mb-2">
+              Campaigns
+            </h1>
+            <p className="text-gray-400 font-extralight">
+              {campaigns.length} total campaigns • {campaigns.filter(c => c.status === 'active').length} active
+            </p>
           </div>
-
-          <div className="mb-8">
-            <label className="block text-sm text-gray-400 mb-4 font-light">Select Channels</label>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {channels.map((channel) => (
-                <button
-                  key={channel.id}
-                  onClick={() => setSelectedChannel(channel.id)}
-                  className={`p-4 rounded-lg border transition-all duration-200 ${
-                    selectedChannel === channel.id
-                      ? 'border-indigo-500/50 bg-indigo-500/10 text-white'
-                      : 'border-indigo-500/20 text-gray-400 hover:border-indigo-500/30'
-                  }`}
-                >
-                  <div className="text-2xl mb-2">{channel.icon}</div>
-                  <div className="text-sm font-light">{channel.name}</div>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <button 
-            className="btn-primary"
-            onClick={handleCreateCampaign}
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="bg-white text-black font-light rounded-md px-6 py-3 hover:bg-opacity-90 transition-all"
           >
-            Generate Campaign with AI
+            Create Campaign
           </button>
         </div>
 
-        <div className="divider-horizontal"></div>
+        <div className="h-px bg-gradient-to-r from-transparent via-indigo-500/30 to-transparent mb-8"></div>
 
-        {/* Active Campaigns */}
-        <div>
-          <h2 className="section-title">Active Campaigns</h2>
-          <p className="section-subtitle mb-8">Monitor and optimize your outreach</p>
-
-          <div className="space-y-6">
-            {campaigns.map((campaign) => (
-              <div key={campaign.id} className="card">
-                <div className="flex items-start justify-between mb-6">
-                  <div>
-                    <h3 className="text-xl font-normal mb-2">{campaign.name}</h3>
-                    <p className={`text-sm font-light ${getStatusColor(campaign.status)}`}>
-                      {campaign.status.charAt(0).toUpperCase() + campaign.status.slice(1)}
-                    </p>
-                  </div>
-                  <button className="btn-secondary btn-sm">
-                    View Details
-                  </button>
+        {/* Human-in-the-Loop Alert */}
+        {pendingApprovalCount > 0 && (
+          <div className="mb-8 bg-orange-900/20 border border-orange-500/30 rounded-lg p-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <div className="w-3 h-3 bg-orange-400 rounded-full animate-pulse"></div>
+                <div>
+                  <h3 className="text-lg font-light text-white">Human Approval Required</h3>
+                  <p className="text-sm text-gray-400">
+                    {pendingApprovalCount} campaign{pendingApprovalCount > 1 ? 's' : ''} ready for your review
+                  </p>
                 </div>
-
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                  <div>
-                    <div className="text-2xl font-light">{campaign.prospects}</div>
-                    <div className="text-gray-500 text-sm font-extralight">Prospects</div>
-                  </div>
-                  <div>
-                    <div className="text-2xl font-light">{campaign.sent}</div>
-                    <div className="text-gray-500 text-sm font-extralight">Messages Sent</div>
-                  </div>
-                  <div>
-                    <div className="text-2xl font-light">{campaign.opened}</div>
-                    <div className="text-gray-500 text-sm font-extralight">Opened</div>
-                  </div>
-                  <div>
-                    <div className="text-2xl font-light text-green-400">{campaign.replied}</div>
-                    <div className="text-gray-500 text-sm font-extralight">Replies</div>
-                  </div>
-                </div>
-
-                {campaign.status === 'active' && (
-                  <div className="mt-6 pt-6 border-t border-indigo-500/10">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-gray-400 font-light">Campaign Progress</span>
-                      <span className="text-gray-300 font-light">
-                        {Math.round((campaign.sent / (campaign.prospects * 3)) * 100)}%
-                      </span>
-                    </div>
-                    <div className="w-full bg-gray-800 rounded-full h-2 mt-2">
-                      <div 
-                        className="h-2 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500"
-                        style={{ width: `${Math.round((campaign.sent / (campaign.prospects * 3)) * 100)}%` }}
-                      ></div>
-                    </div>
-                  </div>
-                )}
               </div>
-            ))}
+              <button
+                onClick={() => setFilters({...filters, status: 'pending_approval'})}
+                className="text-orange-300 hover:text-orange-200 text-sm transition-colors"
+              >
+                Review Now →
+              </button>
+            </div>
           </div>
+        )}
+
+        {/* Filters */}
+        <div className="flex space-x-4 mb-8">
+          <select
+            value={filters.status}
+            onChange={(e) => setFilters({...filters, status: e.target.value})}
+            className="bg-gray-900/30 border border-gray-800 rounded-md px-4 py-2 text-sm text-white focus:border-indigo-500 focus:outline-none"
+          >
+            <option value="all">All Status</option>
+            <option value="pending_approval">Pending Approval</option>
+            <option value="active">Active</option>
+            <option value="paused">Paused</option>
+            <option value="completed">Completed</option>
+            <option value="draft">Draft</option>
+          </select>
+          <select
+            value={filters.channel}
+            onChange={(e) => setFilters({...filters, channel: e.target.value})}
+            className="bg-gray-900/30 border border-gray-800 rounded-md px-4 py-2 text-sm text-white focus:border-indigo-500 focus:outline-none"
+          >
+            <option value="all">All Channels</option>
+            <option value="email">Email</option>
+            <option value="linkedin">LinkedIn</option>
+            <option value="multi">Multi-channel</option>
+          </select>
         </div>
 
-        {/* Campaign Templates */}
-        <div className="mt-16">
-          <h2 className="section-title">AI-Powered Templates</h2>
-          <p className="section-subtitle mb-8">Start with proven strategies</p>
+        {/* Campaigns Grid */}
+        <div className="grid gap-6">
+          {loading ? (
+            <div className="bg-gray-900/30 backdrop-blur-sm border border-gray-800 rounded-lg p-12 text-center">
+              <div className="text-gray-400">Loading campaigns...</div>
+            </div>
+          ) : campaigns.length === 0 ? (
+            <div className="bg-gray-900/30 backdrop-blur-sm border border-gray-800 rounded-lg p-12 text-center">
+              <p className="text-gray-400 mb-4">No campaigns found</p>
+              <button
+                onClick={() => setShowCreateModal(true)}
+                className="text-indigo-400 hover:text-indigo-300 transition-colors"
+              >
+                Create your first campaign →
+              </button>
+            </div>
+          ) : (
+            campaigns.map((campaign) => (
+              <div key={campaign.id} className="bg-gray-900/30 backdrop-blur-sm border border-gray-800 rounded-lg p-6">
+                <div className="flex items-start justify-between mb-4">
+                  <div>
+                    <h3 className="text-xl font-light text-white mb-1">{campaign.name}</h3>
+                    <p className="text-sm text-gray-400">{campaign.description}</p>
+                  </div>
+                  <span className={`text-sm font-medium ${getStatusColor(campaign.status)}`}>
+                    {campaign.status.replace('_', ' ').toUpperCase()}
+                  </span>
+                </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="card hover:border-indigo-500/30 cursor-pointer">
-              <h3 className="text-lg font-normal mb-2">Cold Outreach</h3>
-              <p className="text-gray-400 font-extralight text-sm">
-                Multi-touch sequence for new prospects with personalized messaging
-              </p>
+                <div className="grid grid-cols-4 gap-4 mb-6">
+                  <div>
+                    <p className="text-xs text-gray-500 mb-1">Prospects</p>
+                    <p className="text-lg font-light text-white">{campaign.prospect_count || 0}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500 mb-1">Messages Sent</p>
+                    <p className="text-lg font-light text-white">{campaign.messages_sent || 0}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500 mb-1">Response Rate</p>
+                    <p className="text-lg font-light text-white">{campaign.response_rate || 0}%</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500 mb-1">Meetings</p>
+                    <p className="text-lg font-light text-white">{campaign.meetings_booked || 0}</p>
+                  </div>
+                </div>
+
+                {/* AI Agent Status */}
+                <div className="flex items-center justify-between p-4 bg-black/30 rounded-lg mb-4">
+                  <div className="flex items-center space-x-4">
+                    <div className={`w-2 h-2 rounded-full ${campaign.status === 'active' ? 'bg-green-400 animate-pulse' : 'bg-gray-600'}`}></div>
+                    <div>
+                      <p className="text-sm text-gray-400">Executor Agent</p>
+                      <p className="text-xs text-gray-500">
+                        {campaign.status === 'active' ? 'Processing outreach sequences' : 'Awaiting activation'}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    Powered by Arcade
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2 text-xs text-gray-500">
+                    <span>Channels:</span>
+                    {campaign.channels?.map((channel, idx) => (
+                      <span key={idx} className="text-gray-400">{channel}</span>
+                    ))}
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    {campaign.status === 'pending_approval' && (
+                      <button
+                        onClick={() => handleExecuteCampaign(campaign.id)}
+                        className="bg-green-500/20 hover:bg-green-500/30 text-green-300 px-4 py-2 rounded-md text-sm transition-all"
+                      >
+                        Approve & Execute
+                      </button>
+                    )}
+                    <Link
+                      to={`/campaigns/${campaign.id}`}
+                      className="text-indigo-400 hover:text-indigo-300 text-sm transition-colors"
+                    >
+                      View Details →
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* Agent Orchestration Status */}
+        <div className="mt-8 grid md:grid-cols-4 gap-6">
+          <div className="bg-gray-900/30 backdrop-blur-sm border border-gray-800 rounded-lg p-4">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm text-gray-400">Strategist</span>
+              <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
             </div>
-            <div className="card hover:border-indigo-500/30 cursor-pointer">
-              <h3 className="text-lg font-normal mb-2">Product Launch</h3>
-              <p className="text-gray-400 font-extralight text-sm">
-                Announce new features to engaged prospects with targeted follow-ups
-              </p>
+            <p className="text-lg font-light text-white">15 Campaigns</p>
+            <p className="text-xs text-gray-500 mt-1">AI-designed today</p>
+          </div>
+          <div className="bg-gray-900/30 backdrop-blur-sm border border-gray-800 rounded-lg p-4">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm text-gray-400">Executor</span>
+              <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
             </div>
-            <div className="card hover:border-indigo-500/30 cursor-pointer">
-              <h3 className="text-lg font-normal mb-2">Re-engagement</h3>
-              <p className="text-gray-400 font-extralight text-sm">
-                Win back inactive prospects with value-driven content sequences
-              </p>
+            <p className="text-lg font-light text-white">342 Messages</p>
+            <p className="text-xs text-gray-500 mt-1">Sent via Arcade</p>
+          </div>
+          <div className="bg-gray-900/30 backdrop-blur-sm border border-gray-800 rounded-lg p-4">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm text-gray-400">Mastra</span>
+              <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
             </div>
+            <p className="text-lg font-light text-white">Orchestrating</p>
+            <p className="text-xs text-gray-500 mt-1">Multi-agent workflows</p>
+          </div>
+          <div className="bg-gray-900/30 backdrop-blur-sm border border-gray-800 rounded-lg p-4">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm text-gray-400">Human Control</span>
+              <div className="w-2 h-2 bg-orange-400 rounded-full"></div>
+            </div>
+            <p className="text-lg font-light text-white">{pendingApprovalCount} Pending</p>
+            <p className="text-xs text-gray-500 mt-1">Awaiting approval</p>
           </div>
         </div>
       </div>
+
+      {/* Create Campaign Modal */}
+      {showCreateModal && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-900 border border-gray-800 rounded-lg p-8 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <h2 className="text-2xl font-light text-white mb-6">Create New Campaign</h2>
+            
+            <div className="space-y-6">
+              {/* Basic Info */}
+              <div>
+                <h3 className="text-lg font-light text-white mb-4">Campaign Details</h3>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm text-gray-400 mb-2">Campaign Name</label>
+                    <input
+                      type="text"
+                      value={newCampaign.name}
+                      onChange={(e) => setNewCampaign({...newCampaign, name: e.target.value})}
+                      className="w-full bg-black border border-gray-800 rounded-md px-4 py-2 text-white focus:border-indigo-500 focus:outline-none"
+                      placeholder="e.g., Q1 Enterprise Outreach"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-400 mb-2">Description</label>
+                    <textarea
+                      value={newCampaign.description}
+                      onChange={(e) => setNewCampaign({...newCampaign, description: e.target.value})}
+                      className="w-full bg-black border border-gray-800 rounded-md px-4 py-2 text-white focus:border-indigo-500 focus:outline-none"
+                      rows="3"
+                      placeholder="Describe your campaign goals..."
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Target Criteria */}
+              <div>
+                <h3 className="text-lg font-light text-white mb-4">Target Prospects</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm text-gray-400 mb-2">Industry</label>
+                    <input
+                      type="text"
+                      value={newCampaign.prospectCriteria.industry}
+                      onChange={(e) => setNewCampaign({
+                        ...newCampaign,
+                        prospectCriteria: {...newCampaign.prospectCriteria, industry: e.target.value}
+                      })}
+                      className="w-full bg-black border border-gray-800 rounded-md px-4 py-2 text-white focus:border-indigo-500 focus:outline-none"
+                      placeholder="e.g., Technology"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-400 mb-2">Company Size</label>
+                    <select
+                      value={newCampaign.prospectCriteria.companySize}
+                      onChange={(e) => setNewCampaign({
+                        ...newCampaign,
+                        prospectCriteria: {...newCampaign.prospectCriteria, companySize: e.target.value}
+                      })}
+                      className="w-full bg-black border border-gray-800 rounded-md px-4 py-2 text-white focus:border-indigo-500 focus:outline-none"
+                    >
+                      <option value="">Any size</option>
+                      <option value="1-10">1-10 employees</option>
+                      <option value="11-50">11-50 employees</option>
+                      <option value="51-200">51-200 employees</option>
+                      <option value="201-500">201-500 employees</option>
+                      <option value="500+">500+ employees</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* Channels */}
+              <div>
+                <h3 className="text-lg font-light text-white mb-4">Outreach Channels</h3>
+                <div className="flex space-x-4">
+                  <label className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      checked={newCampaign.channels.includes('email')}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setNewCampaign({...newCampaign, channels: [...newCampaign.channels, 'email']});
+                        } else {
+                          setNewCampaign({...newCampaign, channels: newCampaign.channels.filter(c => c !== 'email')});
+                        }
+                      }}
+                      className="rounded border-gray-800 bg-black text-indigo-500"
+                    />
+                    <span className="text-white">Email</span>
+                  </label>
+                  <label className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      checked={newCampaign.channels.includes('linkedin')}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setNewCampaign({...newCampaign, channels: [...newCampaign.channels, 'linkedin']});
+                        } else {
+                          setNewCampaign({...newCampaign, channels: newCampaign.channels.filter(c => c !== 'linkedin')});
+                        }
+                      }}
+                      className="rounded border-gray-800 bg-black text-indigo-500"
+                    />
+                    <span className="text-white">LinkedIn</span>
+                  </label>
+                </div>
+              </div>
+
+              {/* AI Notice */}
+              <div className="bg-indigo-900/20 border border-indigo-500/30 rounded-lg p-4">
+                <p className="text-sm text-indigo-300">
+                  The Strategist AI agent will design personalized messages for each prospect based on their profile.
+                  You'll have the opportunity to review and approve before execution.
+                </p>
+              </div>
+            </div>
+            
+            <div className="flex justify-end space-x-4 mt-8">
+              <button
+                onClick={() => setShowCreateModal(false)}
+                className="px-6 py-2 text-gray-400 hover:text-white transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleCreateCampaign}
+                className="bg-white text-black font-light rounded-md px-6 py-2 hover:bg-opacity-90 transition-all"
+                disabled={!newCampaign.name || newCampaign.channels.length === 0}
+              >
+                Create Campaign
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
-}
+};
 
 export default Campaigns;

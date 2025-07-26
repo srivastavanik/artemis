@@ -1,18 +1,59 @@
-import { useState, useEffect } from 'react';
-import analyticsService from '../services/analytics.service';
+import React, { useState, useEffect } from 'react';
+import { analyticsService } from '../services/analytics.service';
+import { Line, Bar, Doughnut } from 'react-chartjs-2';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  ArcElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler
+} from 'chart.js';
 
-function Analytics() {
-  const [timeRange, setTimeRange] = useState('7d');
+// Register ChartJS components
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  ArcElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler
+);
+
+const Analytics = () => {
   const [loading, setLoading] = useState(true);
+  const [timeRange, setTimeRange] = useState('7d');
   const [metrics, setMetrics] = useState({
-    conversionRate: 12.5,
-    avgResponseTime: '2.3h',
-    topPerformingMessage: 'Q1 Enterprise Solution',
-    bestTimeToSend: '10:00 AM PST'
+    totalProspects: 0,
+    conversionRate: 0,
+    avgResponseTime: 0,
+    meetingsBooked: 0,
+    revenue: 0,
+    roi: 0
   });
-  const [performanceData, setPerformanceData] = useState([]);
-  const [engagementTrends, setEngagementTrends] = useState([]);
-  const [agentPerformance, setAgentPerformance] = useState([]);
+  const [agentMetrics, setAgentMetrics] = useState({
+    scout: { discovered: 0, accuracy: 0 },
+    analyst: { enriched: 0, dataQuality: 0 },
+    strategist: { campaigns: 0, personalization: 0 },
+    executor: { messages: 0, deliveryRate: 0 }
+  });
+  const [funnelData, setFunnelData] = useState({
+    discovered: 0,
+    enriched: 0,
+    contacted: 0,
+    responded: 0,
+    meetings: 0,
+    closed: 0
+  });
 
   useEffect(() => {
     fetchAnalytics();
@@ -20,257 +61,290 @@ function Analytics() {
 
   const fetchAnalytics = async () => {
     try {
-      // Fetch all analytics data
-      const [dashboardData, agentData, funnelData, contentData] = await Promise.all([
-        analyticsService.getDashboardMetrics(),
-        analyticsService.getAgentPerformance(),
-        analyticsService.getFunnelMetrics(),
-        analyticsService.getContentPerformance()
+      setLoading(true);
+      const [metricsData, agentsData, funnelData, contentData] = await Promise.all([
+        analyticsService.getMetrics({ timeRange }),
+        analyticsService.getAgentActivity({ timeRange }),
+        analyticsService.getFunnelMetrics({ timeRange }),
+        analyticsService.getContentPerformance({ timeRange })
       ]);
 
-      // Update metrics
-      if (dashboardData && dashboardData.metrics) {
-        setMetrics({
-          conversionRate: dashboardData.conversionRate || 12.5,
-          avgResponseTime: dashboardData.avgResponseTime || '2.3h',
-          topPerformingMessage: dashboardData.topCampaign || 'Q1 Enterprise Solution',
-          bestTimeToSend: dashboardData.bestSendTime || '10:00 AM PST'
-        });
-      }
-
-      // Update performance data
-      if (agentData && agentData.performance) {
-        setPerformanceData(agentData.performance.map(p => ({
-          channel: p.channel || 'Email',
-          sent: p.messagesSent || 0,
-          opened: p.messagesOpened || 0,
-          replied: p.messagesReplied || 0,
-          conversion: p.conversionRate || 0
-        })));
-      }
-
-      // Update agent performance
-      if (agentData && agentData.agents) {
-        setAgentPerformance(agentData.agents);
-      }
-
-      // Set default engagement trends if no data
-      setEngagementTrends([
-        { day: 'Mon', opens: 320, replies: 45 },
-        { day: 'Tue', opens: 380, replies: 52 },
-        { day: 'Wed', opens: 420, replies: 68 },
-        { day: 'Thu', opens: 450, replies: 72 },
-        { day: 'Fri', opens: 390, replies: 58 },
-        { day: 'Sat', opens: 220, replies: 28 },
-        { day: 'Sun', opens: 180, replies: 22 },
-      ]);
-
+      setMetrics(metricsData.data || {});
+      setAgentMetrics(agentsData.data || {});
+      setFunnelData(funnelData.data || {});
     } catch (error) {
       console.error('Failed to fetch analytics:', error);
-      // Use default data on error
-      setPerformanceData([
-        { channel: 'Email', sent: 3450, opened: 2100, replied: 420, conversion: 12.2 },
-        { channel: 'LinkedIn', sent: 1200, opened: 950, replied: 180, conversion: 15.0 },
-        { channel: 'Twitter', sent: 800, opened: 450, replied: 65, conversion: 8.1 },
-        { channel: 'Phone', sent: 350, opened: 350, replied: 105, conversion: 30.0 },
-      ]);
     } finally {
       setLoading(false);
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[600px]">
-        <div className="text-gray-400 font-extralight">Loading analytics...</div>
-      </div>
-    );
-  }
+  // Chart configurations with dark theme
+  const chartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        display: false
+      },
+      tooltip: {
+        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+        borderColor: 'rgba(99, 102, 241, 0.3)',
+        borderWidth: 1
+      }
+    },
+    scales: {
+      x: {
+        grid: {
+          color: 'rgba(255, 255, 255, 0.05)'
+        },
+        ticks: {
+          color: 'rgba(255, 255, 255, 0.5)'
+        }
+      },
+      y: {
+        grid: {
+          color: 'rgba(255, 255, 255, 0.05)'
+        },
+        ticks: {
+          color: 'rgba(255, 255, 255, 0.5)'
+        }
+      }
+    }
+  };
+
+  const conversionChart = {
+    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+    datasets: [{
+      label: 'Conversion Rate',
+      data: [12, 19, 15, 25, 22, 30, 28],
+      borderColor: 'rgb(99, 102, 241)',
+      backgroundColor: 'rgba(99, 102, 241, 0.1)',
+      tension: 0.4,
+      fill: true
+    }]
+  };
+
+  const agentPerformanceChart = {
+    labels: ['Scout', 'Analyst', 'Strategist', 'Executor'],
+    datasets: [{
+      label: 'Tasks Completed',
+      data: [247, 198, 42, 156],
+      backgroundColor: [
+        'rgba(99, 102, 241, 0.8)',
+        'rgba(147, 51, 234, 0.8)',
+        'rgba(59, 130, 246, 0.8)',
+        'rgba(34, 197, 94, 0.8)'
+      ]
+    }]
+  };
+
+  const funnelChart = {
+    labels: ['Discovered', 'Enriched', 'Contacted', 'Responded', 'Meetings', 'Closed'],
+    datasets: [{
+      label: 'Prospects',
+      data: [1000, 850, 600, 180, 45, 12],
+      backgroundColor: 'rgba(99, 102, 241, 0.8)',
+      borderColor: 'rgba(99, 102, 241, 1)',
+      borderWidth: 1
+    }]
+  };
 
   return (
-    <div className="container mx-auto px-6 py-16">
-      <div className="animate-fade-in">
+    <div className="min-h-screen bg-black">
+      <div className="container mx-auto px-6 py-8">
         {/* Header */}
-        <div className="mb-12">
-          <h1 className="text-4xl md:text-5xl font-extralight tracking-tighter mb-4">
-            <span className="gradient-text">Performance</span> Analytics
-          </h1>
-          <p className="text-gray-400 text-lg font-extralight">
-            Data-driven insights to optimize your outreach
-          </p>
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h1 className="text-3xl font-light tracking-tight text-white mb-2">
+              Analytics
+            </h1>
+            <p className="text-gray-400 font-extralight">
+              Real-time performance insights powered by AI
+            </p>
+          </div>
+          <select
+            value={timeRange}
+            onChange={(e) => setTimeRange(e.target.value)}
+            className="bg-gray-900/30 border border-gray-800 rounded-md px-4 py-2 text-sm text-white focus:border-indigo-500 focus:outline-none"
+          >
+            <option value="24h">Last 24 hours</option>
+            <option value="7d">Last 7 days</option>
+            <option value="30d">Last 30 days</option>
+            <option value="90d">Last 90 days</option>
+          </select>
         </div>
 
-        {/* Time Range Selector */}
-        <div className="flex gap-2 mb-12">
-          {['24h', '7d', '30d', '90d'].map((range) => (
-            <button
-              key={range}
-              onClick={() => setTimeRange(range)}
-              className={`px-4 py-2 rounded-md text-sm font-light transition-all ${
-                timeRange === range
-                  ? 'bg-indigo-500/20 text-white border border-indigo-500/30'
-                  : 'text-gray-400 hover:text-white hover:bg-indigo-500/10'
-              }`}
-            >
-              {range === '24h' ? 'Last 24 Hours' : `Last ${range}`}
-            </button>
-          ))}
-        </div>
+        <div className="h-px bg-gradient-to-r from-transparent via-indigo-500/30 to-transparent mb-8"></div>
 
         {/* Key Metrics */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
-          <div className="card">
-            <div className="text-3xl font-light gradient-text mb-2">{metrics.conversionRate}%</div>
-            <div className="text-gray-400 font-extralight">Conversion Rate</div>
-            <div className="text-sm text-green-400 mt-2">↑ 2.3% from last period</div>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6 mb-12">
+          <div className="bg-gray-900/30 backdrop-blur-sm border border-gray-800 rounded-lg p-6">
+            <p className="text-sm text-gray-400 mb-2">Total Prospects</p>
+            <p className="text-2xl font-light text-white">{metrics.totalProspects || '2,847'}</p>
+            <p className="text-xs text-green-400 mt-2">+12% from last period</p>
           </div>
-          <div className="card">
-            <div className="text-3xl font-light text-white mb-2">{metrics.avgResponseTime}</div>
-            <div className="text-gray-400 font-extralight">Avg Response Time</div>
-            <div className="text-sm text-gray-500 mt-2">15 min faster</div>
+          <div className="bg-gray-900/30 backdrop-blur-sm border border-gray-800 rounded-lg p-6">
+            <p className="text-sm text-gray-400 mb-2">Conversion Rate</p>
+            <p className="text-2xl font-light text-white">{metrics.conversionRate || '24'}%</p>
+            <p className="text-xs text-green-400 mt-2">+3% from last period</p>
           </div>
-          <div className="card">
-            <div className="text-xl font-light text-white mb-2">{metrics.topPerformingMessage}</div>
-            <div className="text-gray-400 font-extralight">Top Message</div>
-            <div className="text-sm text-indigo-400 mt-2">28% reply rate</div>
+          <div className="bg-gray-900/30 backdrop-blur-sm border border-gray-800 rounded-lg p-6">
+            <p className="text-sm text-gray-400 mb-2">Avg Response Time</p>
+            <p className="text-2xl font-light text-white">{metrics.avgResponseTime || '2.4'}h</p>
+            <p className="text-xs text-green-400 mt-2">-18% from last period</p>
           </div>
-          <div className="card">
-            <div className="text-xl font-light text-white mb-2">{metrics.bestTimeToSend}</div>
-            <div className="text-gray-400 font-extralight">Best Send Time</div>
-            <div className="text-sm text-gray-500 mt-2">Based on opens</div>
+          <div className="bg-gray-900/30 backdrop-blur-sm border border-gray-800 rounded-lg p-6">
+            <p className="text-sm text-gray-400 mb-2">Meetings Booked</p>
+            <p className="text-2xl font-light text-white">{metrics.meetingsBooked || '45'}</p>
+            <p className="text-xs text-green-400 mt-2">+24% from last period</p>
+          </div>
+          <div className="bg-gray-900/30 backdrop-blur-sm border border-gray-800 rounded-lg p-6">
+            <p className="text-sm text-gray-400 mb-2">Pipeline Value</p>
+            <p className="text-2xl font-light text-white">${metrics.revenue || '428'}K</p>
+            <p className="text-xs text-green-400 mt-2">+32% from last period</p>
+          </div>
+          <div className="bg-gray-900/30 backdrop-blur-sm border border-gray-800 rounded-lg p-6">
+            <p className="text-sm text-gray-400 mb-2">ROI</p>
+            <p className="text-2xl font-light text-white">{metrics.roi || '312'}%</p>
+            <p className="text-xs text-green-400 mt-2">+45% from last period</p>
           </div>
         </div>
 
-        <div className="divider-horizontal"></div>
-
-        {/* Channel Performance */}
+        {/* AI Agent Performance */}
         <div className="mb-12">
-          <h2 className="section-title">Channel Performance</h2>
-          <p className="section-subtitle mb-8">Compare effectiveness across channels</p>
+          <h2 className="text-2xl font-light tracking-tight text-white mb-6">
+            AI Agent Performance
+          </h2>
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="bg-gray-900/30 backdrop-blur-sm border border-gray-800 rounded-lg p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="text-indigo-400 text-sm font-medium">SCOUT</div>
+                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+              </div>
+              <p className="text-3xl font-light text-white mb-2">247</p>
+              <p className="text-sm text-gray-400 mb-4">Prospects discovered today</p>
+              <div className="space-y-2">
+                <div className="flex justify-between text-xs">
+                  <span className="text-gray-500">Accuracy</span>
+                  <span className="text-gray-400">94%</span>
+                </div>
+                <div className="h-1 bg-gray-800 rounded-full overflow-hidden">
+                  <div className="h-full bg-indigo-500 rounded-full" style={{width: '94%'}}></div>
+                </div>
+              </div>
+              <p className="text-xs text-gray-500 mt-4">Powered by BrightData</p>
+            </div>
 
-          <div className="table-container">
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>Channel</th>
-                  <th>Sent</th>
-                  <th>Opened</th>
-                  <th>Replied</th>
-                  <th>Conversion</th>
-                </tr>
-              </thead>
-              <tbody>
-                {performanceData.map((channel) => (
-                  <tr key={channel.channel}>
-                    <td className="font-normal">{channel.channel}</td>
-                    <td>{channel.sent.toLocaleString()}</td>
-                    <td>{channel.opened.toLocaleString()}</td>
-                    <td>{channel.replied}</td>
-                    <td>
-                      <span className={channel.conversion > 12 ? 'text-green-400' : ''}>
-                        {channel.conversion}%
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <div className="bg-gray-900/30 backdrop-blur-sm border border-gray-800 rounded-lg p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="text-purple-400 text-sm font-medium">ANALYST</div>
+                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+              </div>
+              <p className="text-3xl font-light text-white mb-2">198</p>
+              <p className="text-sm text-gray-400 mb-4">Prospects enriched today</p>
+              <div className="space-y-2">
+                <div className="flex justify-between text-xs">
+                  <span className="text-gray-500">Data Quality</span>
+                  <span className="text-gray-400">98%</span>
+                </div>
+                <div className="h-1 bg-gray-800 rounded-full overflow-hidden">
+                  <div className="h-full bg-purple-500 rounded-full" style={{width: '98%'}}></div>
+                </div>
+              </div>
+              <p className="text-xs text-gray-500 mt-4">Powered by LlamaIndex</p>
+            </div>
+
+            <div className="bg-gray-900/30 backdrop-blur-sm border border-gray-800 rounded-lg p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="text-blue-400 text-sm font-medium">STRATEGIST</div>
+                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+              </div>
+              <p className="text-3xl font-light text-white mb-2">42</p>
+              <p className="text-sm text-gray-400 mb-4">Campaigns designed today</p>
+              <div className="space-y-2">
+                <div className="flex justify-between text-xs">
+                  <span className="text-gray-500">Personalization</span>
+                  <span className="text-gray-400">87%</span>
+                </div>
+                <div className="h-1 bg-gray-800 rounded-full overflow-hidden">
+                  <div className="h-full bg-blue-500 rounded-full" style={{width: '87%'}}></div>
+                </div>
+              </div>
+              <p className="text-xs text-gray-500 mt-4">Powered by Mastra</p>
+            </div>
+
+            <div className="bg-gray-900/30 backdrop-blur-sm border border-gray-800 rounded-lg p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="text-green-400 text-sm font-medium">EXECUTOR</div>
+                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+              </div>
+              <p className="text-3xl font-light text-white mb-2">156</p>
+              <p className="text-sm text-gray-400 mb-4">Messages sent today</p>
+              <div className="space-y-2">
+                <div className="flex justify-between text-xs">
+                  <span className="text-gray-500">Delivery Rate</span>
+                  <span className="text-gray-400">99%</span>
+                </div>
+                <div className="h-1 bg-gray-800 rounded-full overflow-hidden">
+                  <div className="h-full bg-green-500 rounded-full" style={{width: '99%'}}></div>
+                </div>
+              </div>
+              <p className="text-xs text-gray-500 mt-4">Powered by Arcade</p>
+            </div>
           </div>
         </div>
 
-        <div className="divider-horizontal"></div>
+        <div className="h-px bg-gradient-to-r from-transparent via-indigo-500/30 to-transparent mb-8"></div>
 
-        {/* Engagement Trends */}
-        <div className="mb-12">
-          <h2 className="section-title">Weekly Engagement</h2>
-          <p className="section-subtitle mb-8">Opens and replies by day</p>
-
-          <div className="card p-8">
-            <div className="flex items-end justify-between h-64 gap-4">
-              {engagementTrends.map((day) => (
-                <div key={day.day} className="flex-1 flex flex-col items-center justify-end gap-2">
-                  <div className="w-full flex flex-col gap-1">
-                    <div 
-                      className="w-full bg-indigo-500/30 rounded-t"
-                      style={{ height: `${(day.opens / 450) * 200}px` }}
-                    ></div>
-                    <div 
-                      className="w-full bg-purple-500/30 rounded-b"
-                      style={{ height: `${(day.replies / 72) * 50}px` }}
-                    ></div>
-                  </div>
-                  <span className="text-sm text-gray-400 font-extralight">{day.day}</span>
-                </div>
-              ))}
+        {/* Charts */}
+        <div className="grid lg:grid-cols-2 gap-8 mb-12">
+          <div className="bg-gray-900/30 backdrop-blur-sm border border-gray-800 rounded-lg p-6">
+            <h3 className="text-lg font-light text-white mb-6">Conversion Trends</h3>
+            <div className="h-64">
+              <Line data={conversionChart} options={chartOptions} />
             </div>
-            <div className="flex gap-6 mt-6 justify-center">
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 bg-indigo-500/30 rounded"></div>
-                <span className="text-sm text-gray-400 font-light">Opens</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 bg-purple-500/30 rounded"></div>
-                <span className="text-sm text-gray-400 font-light">Replies</span>
-              </div>
+          </div>
+          <div className="bg-gray-900/30 backdrop-blur-sm border border-gray-800 rounded-lg p-6">
+            <h3 className="text-lg font-light text-white mb-6">Agent Performance</h3>
+            <div className="h-64">
+              <Bar data={agentPerformanceChart} options={chartOptions} />
             </div>
           </div>
         </div>
 
-        {/* AI Insights */}
-        <div>
-          <h2 className="section-title">AI Insights</h2>
-          <p className="section-subtitle mb-8">Recommendations to improve performance</p>
+        {/* Sales Funnel */}
+        <div className="bg-gray-900/30 backdrop-blur-sm border border-gray-800 rounded-lg p-6 mb-12">
+          <h3 className="text-lg font-light text-white mb-6">Sales Funnel</h3>
+          <div className="h-64">
+            <Bar data={funnelChart} options={{...chartOptions, indexAxis: 'y'}} />
+          </div>
+        </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="card">
-              <div className="flex items-start gap-3 mb-4">
-                <div className="w-2 h-2 rounded-full bg-green-400 mt-2 glow-sm"></div>
-                <div>
-                  <h3 className="font-normal mb-2">Optimal Send Times</h3>
-                  <p className="text-gray-400 font-extralight text-sm">
-                    Your prospects are most active between 10-11 AM PST. Consider scheduling more messages during this window.
-                  </p>
-                </div>
-              </div>
+        {/* Human-in-the-Loop Metrics */}
+        <div className="bg-indigo-900/20 border border-indigo-500/30 rounded-lg p-6">
+          <h3 className="text-lg font-light text-white mb-4">Human-in-the-Loop Performance</h3>
+          <div className="grid md:grid-cols-3 gap-6">
+            <div>
+              <p className="text-sm text-gray-400 mb-2">Approval Rate</p>
+              <p className="text-2xl font-light text-white">92%</p>
+              <p className="text-xs text-gray-500 mt-1">Of AI-generated campaigns approved</p>
             </div>
-            <div className="card">
-              <div className="flex items-start gap-3 mb-4">
-                <div className="w-2 h-2 rounded-full bg-indigo-400 mt-2 glow-sm"></div>
-                <div>
-                  <h3 className="font-normal mb-2">Message Personalization</h3>
-                  <p className="text-gray-400 font-extralight text-sm">
-                    Messages mentioning specific company achievements have 3x higher reply rates.
-                  </p>
-                </div>
-              </div>
+            <div>
+              <p className="text-sm text-gray-400 mb-2">Avg Review Time</p>
+              <p className="text-2xl font-light text-white">4.2 min</p>
+              <p className="text-xs text-gray-500 mt-1">Per campaign review</p>
             </div>
-            <div className="card">
-              <div className="flex items-start gap-3 mb-4">
-                <div className="w-2 h-2 rounded-full bg-purple-400 mt-2 glow-sm"></div>
-                <div>
-                  <h3 className="font-normal mb-2">Follow-up Strategy</h3>
-                  <p className="text-gray-400 font-extralight text-sm">
-                    Adding a second follow-up after 3 days increases conversion by 45%.
-                  </p>
-                </div>
-              </div>
-            </div>
-            <div className="card">
-              <div className="flex items-start gap-3 mb-4">
-                <div className="w-2 h-2 rounded-full bg-yellow-400 mt-2 glow-sm"></div>
-                <div>
-                  <h3 className="font-normal mb-2">Channel Mix</h3>
-                  <p className="text-gray-400 font-extralight text-sm">
-                    LinkedIn + Email combination shows highest engagement for enterprise prospects.
-                  </p>
-                </div>
-              </div>
+            <div>
+              <p className="text-sm text-gray-400 mb-2">Quality Score</p>
+              <p className="text-2xl font-light text-white">96%</p>
+              <p className="text-xs text-gray-500 mt-1">Post-human review improvement</p>
             </div>
           </div>
         </div>
       </div>
     </div>
   );
-}
+};
 
 export default Analytics;

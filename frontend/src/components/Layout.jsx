@@ -1,124 +1,88 @@
 import React, { useState } from 'react';
-import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import {
-  ArrowRightOnRectangleIcon,
-  UserCircleIcon,
-  ChevronDownIcon
-} from '@heroicons/react/24/outline';
 
-function Layout() {
+const Layout = ({ children }) => {
+  const { user, signOut } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, signOut } = useAuth();
   const [showUserMenu, setShowUserMenu] = useState(false);
-  
-  const navigation = [
-    { name: 'Dashboard', href: '/' },
-    { name: 'Prospects', href: '/prospects' },
-    { name: 'Campaigns', href: '/campaigns' },
-    { name: 'Analytics', href: '/analytics' },
-  ];
-  
-  const isActive = (path) => location.pathname === path;
 
   const handleSignOut = async () => {
     await signOut();
-    navigate('/auth/login');
+    navigate('/');
   };
 
+  const navigation = [
+    { name: 'Dashboard', href: '/dashboard' },
+    { name: 'Prospects', href: '/prospects' },
+    { name: 'Campaigns', href: '/campaigns' },
+    { name: 'Analytics', href: '/analytics' },
+    { name: 'Settings', href: '/settings' }
+  ];
+
+  const isActive = (path) => location.pathname === path;
+
   return (
-    <div className="min-h-screen bg-black text-white relative">
+    <div className="min-h-screen bg-black text-white">
       {/* Navigation */}
-      <nav className="container mx-auto px-6 py-6 relative z-10">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center">
-            <svg className="h-8 w-8 text-indigo-400" viewBox="0 0 24 24" fill="none">
-              <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M2 17L12 22L22 17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M2 12L12 17L22 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-            <span className="ml-3 text-xl tracking-tight font-medium">ARTEMIS</span>
-          </div>
-          
-          <div className="hidden md:flex space-x-10">
-            {navigation.map((item) => (
-              <Link
-                key={item.name}
-                to={item.href}
-                className={`nav-item ${isActive(item.href) ? 'nav-item-active' : ''}`}
-              >
-                {item.name}
+      <nav className="border-b border-gray-800">
+        <div className="container mx-auto px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-8">
+              <Link to="/dashboard" className="text-xl font-medium tracking-tight">
+                ARTEMIS
               </Link>
-            ))}
-          </div>
-          
-          <div className="flex items-center gap-4">
-            <Link 
-              to="/settings" 
-              className="btn-secondary btn-sm"
-            >
-              Settings
-            </Link>
+              <div className="hidden md:flex space-x-1">
+                {navigation.map((item) => (
+                  <Link
+                    key={item.name}
+                    to={item.href}
+                    className={`px-4 py-2 text-sm rounded-md transition-all ${
+                      isActive(item.href)
+                        ? 'bg-gray-900 text-white'
+                        : 'text-gray-400 hover:text-white hover:bg-gray-900/50'
+                    }`}
+                  >
+                    {item.name}
+                  </Link>
+                ))}
+              </div>
+            </div>
 
             {/* User Menu */}
             <div className="relative">
               <button
                 onClick={() => setShowUserMenu(!showUserMenu)}
-                className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-900/50 hover:bg-gray-800/50 transition-colors"
+                className="flex items-center space-x-3 text-sm hover:text-gray-300 transition-colors"
               >
-                {user?.avatar_url ? (
-                  <img 
-                    src={user.avatar_url} 
-                    alt={user.full_name} 
-                    className="w-8 h-8 rounded-full"
-                  />
-                ) : (
-                  <UserCircleIcon className="w-8 h-8 text-gray-400" />
-                )}
-                <span className="text-sm font-medium">{user?.full_name || user?.email}</span>
-                <ChevronDownIcon className="w-4 h-4 text-gray-400" />
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center">
+                  {user?.user_metadata?.name?.charAt(0)?.toUpperCase() || 
+                   user?.email?.charAt(0)?.toUpperCase() || 'U'}
+                </div>
+                <span className="hidden md:block font-light">
+                  {user?.user_metadata?.name || user?.email?.split('@')[0]}
+                </span>
               </button>
 
               {showUserMenu && (
-                <div className="absolute right-0 mt-2 w-56 bg-gray-900 border border-gray-800 rounded-lg shadow-lg z-50">
-                  <div className="px-4 py-3 border-b border-gray-800">
-                    <p className="text-sm font-medium">{user?.full_name}</p>
-                    <p className="text-xs text-gray-400">{user?.email}</p>
-                    {user?.workspaces && (
-                      <p className="text-xs text-gray-500 mt-1">{user.workspaces.name}</p>
-                    )}
-                  </div>
-
-                  <div className="py-1">
-                    <Link
-                      to="/settings"
-                      onClick={() => setShowUserMenu(false)}
-                      className="flex items-center px-4 py-2 text-sm text-gray-300 hover:bg-gray-800 hover:text-white transition-colors"
-                    >
-                      Account Settings
-                    </Link>
-                    
-                    {user?.role === 'owner' && (
-                      <Link
-                        to="/settings/team"
-                        onClick={() => setShowUserMenu(false)}
-                        className="flex items-center px-4 py-2 text-sm text-gray-300 hover:bg-gray-800 hover:text-white transition-colors"
-                      >
-                        Team Management
-                      </Link>
-                    )}
-                  </div>
-
-                  <div className="border-t border-gray-800">
-                    <button
-                      onClick={handleSignOut}
-                      className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-300 hover:bg-gray-800 hover:text-white transition-colors"
-                    >
-                      <ArrowRightOnRectangleIcon className="w-4 h-4" />
-                      Sign Out
-                    </button>
-                  </div>
+                <div className="absolute right-0 mt-2 w-48 bg-gray-900 border border-gray-800 rounded-lg shadow-lg py-2 z-50">
+                  <Link
+                    to="/settings"
+                    className="block px-4 py-2 text-sm text-gray-300 hover:text-white hover:bg-gray-800 transition-colors"
+                    onClick={() => setShowUserMenu(false)}
+                  >
+                    Settings
+                  </Link>
+                  <button
+                    onClick={() => {
+                      setShowUserMenu(false);
+                      handleSignOut();
+                    }}
+                    className="block w-full text-left px-4 py-2 text-sm text-gray-300 hover:text-white hover:bg-gray-800 transition-colors"
+                  >
+                    Sign Out
+                  </button>
                 </div>
               )}
             </div>
@@ -126,22 +90,40 @@ function Layout() {
         </div>
       </nav>
 
-      <div className="divider-horizontal"></div>
-
       {/* Main Content */}
-      <main className="relative z-10">
-        <Outlet />
+      <main className="flex-1">
+        {children}
       </main>
 
-      {/* Click outside to close user menu */}
-      {showUserMenu && (
-        <div 
-          className="fixed inset-0 z-40" 
-          onClick={() => setShowUserMenu(false)}
-        />
-      )}
+      {/* Status Bar */}
+      <div className="fixed bottom-0 left-0 right-0 bg-gray-900/80 backdrop-blur-sm border-t border-gray-800">
+        <div className="container mx-auto px-6 py-2">
+          <div className="flex items-center justify-between text-xs">
+            <div className="flex items-center space-x-6">
+              <div className="flex items-center space-x-2">
+                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                <span className="text-gray-400">4 AI Agents Active</span>
+              </div>
+              <div className="text-gray-500">|</div>
+              <span className="text-gray-400">WebSocket Connected</span>
+              <div className="text-gray-500">|</div>
+              <span className="text-gray-400">Last sync: 2 min ago</span>
+            </div>
+            <div className="flex items-center space-x-4">
+              <span className="text-gray-500">Powered by</span>
+              <span className="text-gray-400">BrightData</span>
+              <span className="text-gray-500">•</span>
+              <span className="text-gray-400">LlamaIndex</span>
+              <span className="text-gray-500">•</span>
+              <span className="text-gray-400">Arcade</span>
+              <span className="text-gray-500">•</span>
+              <span className="text-gray-400">Mastra</span>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
-}
+};
 
 export default Layout;
