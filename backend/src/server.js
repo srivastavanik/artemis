@@ -11,6 +11,7 @@ import campaignRoutes from './routes/campaigns.routes.js';
 import analyticsRoutes from './routes/analytics.routes.js';
 import webhookRoutes from './routes/webhooks.routes.js';
 import testRoutes from './routes/test.routes.js';
+import authRoutes from './routes/auth.routes.js';
 import executorAgent from './agents/executor.agent.js';
 import websocketService from './services/websocket.service.js';
 import { authenticate, optionalAuth } from './middleware/auth.middleware.js';
@@ -95,6 +96,9 @@ app.get('/health', (req, res) => {
     websocket: websocketService.getConnectionStats()
   });
 });
+
+// Auth routes (no auth middleware on auth routes themselves)
+app.use('/api/auth', authRoutes);
 
 // API Routes with rate limiting
 app.use('/api/prospects', optionalAuth, rateLimit.enrichment, prospectRoutes);
