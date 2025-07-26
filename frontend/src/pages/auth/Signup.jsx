@@ -52,46 +52,44 @@ const Signup = () => {
 
   return (
     <div className="min-h-screen bg-black text-white font-light flex items-center justify-center">
-      <div className="absolute inset-0 bg-gradient-to-br from-purple-900/10 via-black to-indigo-900/10"></div>
-      
-      <div className="relative z-10 w-full max-w-md px-6">
+      <div className="w-full max-w-md px-6">
         <div className="text-center mb-12">
           <Link to="/" className="inline-block mb-8">
             <h1 className="text-3xl font-medium tracking-tight">ARTEMIS</h1>
           </Link>
-          <h2 className="text-2xl font-light tracking-tight mb-2">Start your free trial</h2>
+          <h2 className="text-2xl font-light tracking-tight mb-2">Get started free</h2>
           <p className="text-gray-400 font-extralight">Transform your sales with AI</p>
         </div>
 
         {error && (
-          <div className="mb-6 p-4 bg-red-900/20 border border-red-500/30 rounded-lg">
-            <p className="text-sm text-red-300">{error}</p>
+          <div className="mb-6 p-4 border border-red-500/30 rounded-md">
+            <p className="text-sm text-red-400 font-extralight">{error}</p>
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm text-gray-400 mb-2">Full Name</label>
+              <label className="block text-sm text-gray-400 font-extralight mb-2">Full Name</label>
               <input
                 type="text"
                 name="name"
                 value={formData.name}
                 onChange={handleChange}
-                className="w-full bg-gray-900/30 border border-gray-800 rounded-md px-4 py-3 text-white placeholder-gray-600 focus:border-indigo-500 focus:outline-none transition-colors"
+                className="w-full bg-transparent border border-gray-800 rounded-md px-4 py-3 text-white placeholder-gray-600 focus:border-indigo-500 focus:outline-none transition-colors font-light"
                 placeholder="John Doe"
                 required
                 disabled={loading}
               />
             </div>
             <div>
-              <label className="block text-sm text-gray-400 mb-2">Company</label>
+              <label className="block text-sm text-gray-400 font-extralight mb-2">Company</label>
               <input
                 type="text"
                 name="company"
                 value={formData.company}
                 onChange={handleChange}
-                className="w-full bg-gray-900/30 border border-gray-800 rounded-md px-4 py-3 text-white placeholder-gray-600 focus:border-indigo-500 focus:outline-none transition-colors"
+                className="w-full bg-transparent border border-gray-800 rounded-md px-4 py-3 text-white placeholder-gray-600 focus:border-indigo-500 focus:outline-none transition-colors font-light"
                 placeholder="Acme Inc."
                 disabled={loading}
               />
@@ -99,13 +97,13 @@ const Signup = () => {
           </div>
 
           <div>
-            <label className="block text-sm text-gray-400 mb-2">Work Email</label>
+            <label className="block text-sm text-gray-400 font-extralight mb-2">Work Email</label>
             <input
               type="email"
               name="email"
               value={formData.email}
               onChange={handleChange}
-              className="w-full bg-gray-900/30 border border-gray-800 rounded-md px-4 py-3 text-white placeholder-gray-600 focus:border-indigo-500 focus:outline-none transition-colors"
+              className="w-full bg-transparent border border-gray-800 rounded-md px-4 py-3 text-white placeholder-gray-600 focus:border-indigo-500 focus:outline-none transition-colors font-light"
               placeholder="you@company.com"
               required
               disabled={loading}
@@ -113,40 +111,40 @@ const Signup = () => {
           </div>
 
           <div>
-            <label className="block text-sm text-gray-400 mb-2">Password</label>
+            <label className="block text-sm text-gray-400 font-extralight mb-2">Password</label>
             <input
               type="password"
               name="password"
               value={formData.password}
               onChange={handleChange}
-              className="w-full bg-gray-900/30 border border-gray-800 rounded-md px-4 py-3 text-white placeholder-gray-600 focus:border-indigo-500 focus:outline-none transition-colors"
+              className="w-full bg-transparent border border-gray-800 rounded-md px-4 py-3 text-white placeholder-gray-600 focus:border-indigo-500 focus:outline-none transition-colors font-light"
               placeholder="••••••••"
               required
               disabled={loading}
             />
-            <p className="mt-2 text-xs text-gray-500">Must be at least 8 characters</p>
+            <p className="mt-2 text-xs text-gray-500 font-extralight">Must be at least 8 characters</p>
           </div>
 
-          <div className="bg-gray-900/20 border border-gray-800 rounded-lg p-4">
-            <p className="text-sm text-gray-400">
-              By signing up, you'll get access to:
+          <div className="border border-gray-800 rounded-lg p-4">
+            <p className="text-sm text-gray-400 font-extralight mb-3">
+              You'll get access to:
             </p>
-            <ul className="mt-3 space-y-2 text-sm">
+            <ul className="space-y-2 text-sm">
               <li className="flex items-center space-x-2">
                 <div className="w-1.5 h-1.5 bg-indigo-400 rounded-full"></div>
-                <span className="text-gray-300">4 AI agents working 24/7</span>
+                <span className="text-gray-300 font-extralight">4 AI agents working 24/7</span>
               </li>
               <li className="flex items-center space-x-2">
                 <div className="w-1.5 h-1.5 bg-purple-400 rounded-full"></div>
-                <span className="text-gray-300">Automated prospect discovery</span>
+                <span className="text-gray-300 font-extralight">Automated prospect discovery</span>
               </li>
               <li className="flex items-center space-x-2">
                 <div className="w-1.5 h-1.5 bg-blue-400 rounded-full"></div>
-                <span className="text-gray-300">Multi-channel campaigns</span>
+                <span className="text-gray-300 font-extralight">Multi-channel campaigns</span>
               </li>
               <li className="flex items-center space-x-2">
                 <div className="w-1.5 h-1.5 bg-green-400 rounded-full"></div>
-                <span className="text-gray-300">Human-in-the-loop control</span>
+                <span className="text-gray-300 font-extralight">Human-in-the-loop control</span>
               </li>
             </ul>
           </div>
@@ -158,7 +156,7 @@ const Signup = () => {
             disabled={loading}
             className="w-full bg-white text-black font-light rounded-md px-4 py-3 hover:bg-opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {loading ? 'Creating account...' : 'Start Free Trial'}
+            {loading ? 'Creating account...' : 'Get Started'}
           </button>
 
           <div className="relative">
@@ -166,7 +164,7 @@ const Signup = () => {
               <div className="w-full border-t border-gray-800"></div>
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-4 bg-black text-gray-500">Or continue with</span>
+              <span className="px-4 bg-black text-gray-500 font-extralight">Or continue with</span>
             </div>
           </div>
 
@@ -174,7 +172,7 @@ const Signup = () => {
             type="button"
             onClick={handleGoogleSignUp}
             disabled={loading}
-            className="w-full bg-gray-900/30 border border-gray-800 rounded-md px-4 py-3 hover:bg-gray-900/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-3"
+            className="w-full border border-gray-800 rounded-md px-4 py-3 hover:border-gray-700 hover:bg-gray-900/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-3"
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24">
               <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -182,18 +180,18 @@ const Signup = () => {
               <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
               <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
             </svg>
-            <span>Continue with Google</span>
+            <span className="font-light">Continue with Google</span>
           </button>
         </form>
 
-        <p className="mt-8 text-center text-sm text-gray-400">
+        <p className="mt-8 text-center text-sm text-gray-400 font-extralight">
           Already have an account?{' '}
           <Link to="/login" className="text-indigo-400 hover:text-indigo-300 transition-colors">
             Sign in
           </Link>
         </p>
 
-        <p className="mt-6 text-center text-xs text-gray-500">
+        <p className="mt-6 text-center text-xs text-gray-500 font-extralight">
           By signing up, you agree to our{' '}
           <Link to="/terms" className="text-gray-400 hover:text-white transition-colors">Terms</Link>
           {' '}and{' '}

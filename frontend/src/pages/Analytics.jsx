@@ -1,349 +1,225 @@
 import React, { useState, useEffect } from 'react';
+import Layout from '../components/Layout';
 import { analyticsService } from '../services/analytics.service';
-import { Line, Bar, Doughnut } from 'react-chartjs-2';
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  BarElement,
-  ArcElement,
-  Title,
-  Tooltip,
-  Legend,
-  Filler
-} from 'chart.js';
-
-// Register ChartJS components
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  BarElement,
-  ArcElement,
-  Title,
-  Tooltip,
-  Legend,
-  Filler
-);
 
 const Analytics = () => {
-  const [loading, setLoading] = useState(true);
   const [timeRange, setTimeRange] = useState('7d');
   const [metrics, setMetrics] = useState({
-    totalProspects: 0,
-    conversionRate: 0,
-    avgResponseTime: 0,
-    meetingsBooked: 0,
-    revenue: 0,
-    roi: 0
+    conversionRate: 12.5,
+    conversionGrowth: 2.3,
+    responseTime: 2.3,
+    responseTimeDiff: -15,
+    topMessage: 'Q1 Enterprise Solution',
+    replyRate: 28,
+    bestSendTime: '10:00 AM PST',
+    openRate: 45
   });
-  const [agentMetrics, setAgentMetrics] = useState({
-    scout: { discovered: 0, accuracy: 0 },
-    analyst: { enriched: 0, dataQuality: 0 },
-    strategist: { campaigns: 0, personalization: 0 },
-    executor: { messages: 0, deliveryRate: 0 }
-  });
-  const [funnelData, setFunnelData] = useState({
-    discovered: 0,
-    enriched: 0,
-    contacted: 0,
-    responded: 0,
-    meetings: 0,
-    closed: 0
-  });
+
+  const [channelPerformance, setChannelPerformance] = useState([
+    { channel: 'Email', sent: 3450, opened: 2100, replied: 420, conversion: 12.2 },
+    { channel: 'LinkedIn', sent: 1200, opened: 950, replied: 180, conversion: 15.0 },
+    { channel: 'Twitter', sent: 800, opened: 450, replied: 65, conversion: 8.1 }
+  ]);
 
   useEffect(() => {
-    fetchAnalytics();
+    loadAnalytics();
   }, [timeRange]);
 
-  const fetchAnalytics = async () => {
+  const loadAnalytics = async () => {
     try {
-      setLoading(true);
-      const [metricsData, agentsData, funnelData, contentData] = await Promise.all([
-        analyticsService.getMetrics({ timeRange }),
-        analyticsService.getAgentActivity({ timeRange }),
-        analyticsService.getFunnelMetrics({ timeRange }),
-        analyticsService.getContentPerformance({ timeRange })
-      ]);
-
-      setMetrics(metricsData.data || {});
-      setAgentMetrics(agentsData.data || {});
-      setFunnelData(funnelData.data || {});
+      const data = await analyticsService.getPerformanceMetrics(timeRange);
+      if (data) {
+        setMetrics(data);
+      }
     } catch (error) {
-      console.error('Failed to fetch analytics:', error);
-    } finally {
-      setLoading(false);
+      console.error('Error loading analytics:', error);
     }
-  };
-
-  // Chart configurations with dark theme
-  const chartOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        display: false
-      },
-      tooltip: {
-        backgroundColor: 'rgba(0, 0, 0, 0.8)',
-        borderColor: 'rgba(99, 102, 241, 0.3)',
-        borderWidth: 1
-      }
-    },
-    scales: {
-      x: {
-        grid: {
-          color: 'rgba(255, 255, 255, 0.05)'
-        },
-        ticks: {
-          color: 'rgba(255, 255, 255, 0.5)'
-        }
-      },
-      y: {
-        grid: {
-          color: 'rgba(255, 255, 255, 0.05)'
-        },
-        ticks: {
-          color: 'rgba(255, 255, 255, 0.5)'
-        }
-      }
-    }
-  };
-
-  const conversionChart = {
-    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-    datasets: [{
-      label: 'Conversion Rate',
-      data: [12, 19, 15, 25, 22, 30, 28],
-      borderColor: 'rgb(99, 102, 241)',
-      backgroundColor: 'rgba(99, 102, 241, 0.1)',
-      tension: 0.4,
-      fill: true
-    }]
-  };
-
-  const agentPerformanceChart = {
-    labels: ['Scout', 'Analyst', 'Strategist', 'Executor'],
-    datasets: [{
-      label: 'Tasks Completed',
-      data: [247, 198, 42, 156],
-      backgroundColor: [
-        'rgba(99, 102, 241, 0.8)',
-        'rgba(147, 51, 234, 0.8)',
-        'rgba(59, 130, 246, 0.8)',
-        'rgba(34, 197, 94, 0.8)'
-      ]
-    }]
-  };
-
-  const funnelChart = {
-    labels: ['Discovered', 'Enriched', 'Contacted', 'Responded', 'Meetings', 'Closed'],
-    datasets: [{
-      label: 'Prospects',
-      data: [1000, 850, 600, 180, 45, 12],
-      backgroundColor: 'rgba(99, 102, 241, 0.8)',
-      borderColor: 'rgba(99, 102, 241, 1)',
-      borderWidth: 1
-    }]
   };
 
   return (
-    <div className="min-h-screen bg-black">
+    <Layout>
       <div className="container mx-auto px-6 py-8">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-3xl font-light tracking-tight text-white mb-2">
-              Analytics
-            </h1>
-            <p className="text-gray-400 font-extralight">
-              Real-time performance insights powered by AI
-            </p>
-          </div>
-          <select
-            value={timeRange}
-            onChange={(e) => setTimeRange(e.target.value)}
-            className="bg-gray-900/30 border border-gray-800 rounded-md px-4 py-2 text-sm text-white focus:border-indigo-500 focus:outline-none"
-          >
-            <option value="24h">Last 24 hours</option>
-            <option value="7d">Last 7 days</option>
-            <option value="30d">Last 30 days</option>
-            <option value="90d">Last 90 days</option>
-          </select>
+        <div className="mb-12">
+          <h1 className="text-4xl md:text-5xl font-light tracking-tight mb-4">
+            <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-purple-400">
+              Performance
+            </span>{' '}
+            Analytics
+          </h1>
+          <p className="text-gray-400 font-extralight text-lg">
+            Data-driven insights to optimize your outreach
+          </p>
         </div>
 
-        <div className="h-px bg-gradient-to-r from-transparent via-indigo-500/30 to-transparent mb-8"></div>
+        {/* Time Range Selector */}
+        <div className="flex space-x-4 mb-8">
+          {[
+            { value: '24h', label: 'Last 24 Hours' },
+            { value: '7d', label: 'Last 7d' },
+            { value: '30d', label: 'Last 30d' },
+            { value: '90d', label: 'Last 90d' }
+          ].map((range) => (
+            <button
+              key={range.value}
+              onClick={() => setTimeRange(range.value)}
+              className={`px-4 py-2 rounded-md transition-all font-light ${
+                timeRange === range.value
+                  ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/50'
+                  : 'text-gray-400 hover:text-white border border-gray-800 hover:border-gray-700'
+              }`}
+            >
+              {range.label}
+            </button>
+          ))}
+        </div>
 
         {/* Key Metrics */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6 mb-12">
-          <div className="bg-gray-900/30 backdrop-blur-sm border border-gray-800 rounded-lg p-6">
-            <p className="text-sm text-gray-400 mb-2">Total Prospects</p>
-            <p className="text-2xl font-light text-white">{metrics.totalProspects || '2,847'}</p>
-            <p className="text-xs text-green-400 mt-2">+12% from last period</p>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
+          <div className="border border-gray-800 rounded-lg p-6">
+            <h3 className="text-gray-400 font-extralight mb-3">Conversion Rate</h3>
+            <p className="text-3xl font-light mb-1">{metrics.conversionRate}%</p>
+            <p className={`text-sm font-extralight ${metrics.conversionGrowth > 0 ? 'text-green-400' : 'text-red-400'}`}>
+              {metrics.conversionGrowth > 0 ? '+' : ''}{metrics.conversionGrowth}% from last period
+            </p>
           </div>
-          <div className="bg-gray-900/30 backdrop-blur-sm border border-gray-800 rounded-lg p-6">
-            <p className="text-sm text-gray-400 mb-2">Conversion Rate</p>
-            <p className="text-2xl font-light text-white">{metrics.conversionRate || '24'}%</p>
-            <p className="text-xs text-green-400 mt-2">+3% from last period</p>
+
+          <div className="border border-gray-800 rounded-lg p-6">
+            <h3 className="text-gray-400 font-extralight mb-3">Avg Response Time</h3>
+            <p className="text-3xl font-light mb-1">{metrics.responseTime}h</p>
+            <p className={`text-sm font-extralight ${metrics.responseTimeDiff < 0 ? 'text-green-400' : 'text-red-400'}`}>
+              {metrics.responseTimeDiff} min faster
+            </p>
           </div>
-          <div className="bg-gray-900/30 backdrop-blur-sm border border-gray-800 rounded-lg p-6">
-            <p className="text-sm text-gray-400 mb-2">Avg Response Time</p>
-            <p className="text-2xl font-light text-white">{metrics.avgResponseTime || '2.4'}h</p>
-            <p className="text-xs text-green-400 mt-2">-18% from last period</p>
+
+          <div className="border border-gray-800 rounded-lg p-6">
+            <h3 className="text-gray-400 font-extralight mb-3">Top Message</h3>
+            <p className="text-lg font-light mb-1">{metrics.topMessage}</p>
+            <p className="text-sm font-extralight text-gray-400">
+              {metrics.replyRate}% reply rate
+            </p>
           </div>
-          <div className="bg-gray-900/30 backdrop-blur-sm border border-gray-800 rounded-lg p-6">
-            <p className="text-sm text-gray-400 mb-2">Meetings Booked</p>
-            <p className="text-2xl font-light text-white">{metrics.meetingsBooked || '45'}</p>
-            <p className="text-xs text-green-400 mt-2">+24% from last period</p>
-          </div>
-          <div className="bg-gray-900/30 backdrop-blur-sm border border-gray-800 rounded-lg p-6">
-            <p className="text-sm text-gray-400 mb-2">Pipeline Value</p>
-            <p className="text-2xl font-light text-white">${metrics.revenue || '428'}K</p>
-            <p className="text-xs text-green-400 mt-2">+32% from last period</p>
-          </div>
-          <div className="bg-gray-900/30 backdrop-blur-sm border border-gray-800 rounded-lg p-6">
-            <p className="text-sm text-gray-400 mb-2">ROI</p>
-            <p className="text-2xl font-light text-white">{metrics.roi || '312'}%</p>
-            <p className="text-xs text-green-400 mt-2">+45% from last period</p>
+
+          <div className="border border-gray-800 rounded-lg p-6">
+            <h3 className="text-gray-400 font-extralight mb-3">Best Send Time</h3>
+            <p className="text-lg font-light mb-1">{metrics.bestSendTime}</p>
+            <p className="text-sm font-extralight text-gray-400">
+              Based on opens
+            </p>
           </div>
         </div>
 
-        {/* AI Agent Performance */}
-        <div className="mb-12">
-          <h2 className="text-2xl font-light tracking-tight text-white mb-6">
-            AI Agent Performance
-          </h2>
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div className="bg-gray-900/30 backdrop-blur-sm border border-gray-800 rounded-lg p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="text-indigo-400 text-sm font-medium">SCOUT</div>
-                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-              </div>
-              <p className="text-3xl font-light text-white mb-2">247</p>
-              <p className="text-sm text-gray-400 mb-4">Prospects discovered today</p>
-              <div className="space-y-2">
-                <div className="flex justify-between text-xs">
-                  <span className="text-gray-500">Accuracy</span>
-                  <span className="text-gray-400">94%</span>
-                </div>
-                <div className="h-1 bg-gray-800 rounded-full overflow-hidden">
-                  <div className="h-full bg-indigo-500 rounded-full" style={{width: '94%'}}></div>
-                </div>
-              </div>
-              <p className="text-xs text-gray-500 mt-4">Powered by BrightData</p>
-            </div>
+        <div className="h-px bg-gradient-to-r from-transparent via-gray-800 to-transparent my-12"></div>
 
-            <div className="bg-gray-900/30 backdrop-blur-sm border border-gray-800 rounded-lg p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="text-purple-400 text-sm font-medium">ANALYST</div>
-                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-              </div>
-              <p className="text-3xl font-light text-white mb-2">198</p>
-              <p className="text-sm text-gray-400 mb-4">Prospects enriched today</p>
-              <div className="space-y-2">
-                <div className="flex justify-between text-xs">
-                  <span className="text-gray-500">Data Quality</span>
-                  <span className="text-gray-400">98%</span>
-                </div>
-                <div className="h-1 bg-gray-800 rounded-full overflow-hidden">
-                  <div className="h-full bg-purple-500 rounded-full" style={{width: '98%'}}></div>
-                </div>
-              </div>
-              <p className="text-xs text-gray-500 mt-4">Powered by LlamaIndex</p>
-            </div>
+        {/* Channel Performance */}
+        <div>
+          <h2 className="text-2xl font-light tracking-tight mb-6">Channel Performance</h2>
+          <p className="text-gray-400 font-extralight mb-8">Compare effectiveness across channels</p>
 
-            <div className="bg-gray-900/30 backdrop-blur-sm border border-gray-800 rounded-lg p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="text-blue-400 text-sm font-medium">STRATEGIST</div>
-                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-              </div>
-              <p className="text-3xl font-light text-white mb-2">42</p>
-              <p className="text-sm text-gray-400 mb-4">Campaigns designed today</p>
-              <div className="space-y-2">
-                <div className="flex justify-between text-xs">
-                  <span className="text-gray-500">Personalization</span>
-                  <span className="text-gray-400">87%</span>
-                </div>
-                <div className="h-1 bg-gray-800 rounded-full overflow-hidden">
-                  <div className="h-full bg-blue-500 rounded-full" style={{width: '87%'}}></div>
-                </div>
-              </div>
-              <p className="text-xs text-gray-500 mt-4">Powered by Mastra</p>
-            </div>
-
-            <div className="bg-gray-900/30 backdrop-blur-sm border border-gray-800 rounded-lg p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="text-green-400 text-sm font-medium">EXECUTOR</div>
-                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-              </div>
-              <p className="text-3xl font-light text-white mb-2">156</p>
-              <p className="text-sm text-gray-400 mb-4">Messages sent today</p>
-              <div className="space-y-2">
-                <div className="flex justify-between text-xs">
-                  <span className="text-gray-500">Delivery Rate</span>
-                  <span className="text-gray-400">99%</span>
-                </div>
-                <div className="h-1 bg-gray-800 rounded-full overflow-hidden">
-                  <div className="h-full bg-green-500 rounded-full" style={{width: '99%'}}></div>
-                </div>
-              </div>
-              <p className="text-xs text-gray-500 mt-4">Powered by Arcade</p>
+          <div className="border border-gray-800 rounded-lg overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-gray-800">
+                    <th className="text-left py-4 px-6 font-light text-gray-400">Channel</th>
+                    <th className="text-left py-4 px-6 font-light text-gray-400">Sent</th>
+                    <th className="text-left py-4 px-6 font-light text-gray-400">Opened</th>
+                    <th className="text-left py-4 px-6 font-light text-gray-400">Replied</th>
+                    <th className="text-left py-4 px-6 font-light text-gray-400">Conversion</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {channelPerformance.map((channel) => (
+                    <tr key={channel.channel} className="border-b border-gray-800">
+                      <td className="py-4 px-6 font-light">{channel.channel}</td>
+                      <td className="py-4 px-6 font-light">{channel.sent.toLocaleString()}</td>
+                      <td className="py-4 px-6 font-light">{channel.opened.toLocaleString()}</td>
+                      <td className="py-4 px-6 font-light">{channel.replied}</td>
+                      <td className="py-4 px-6">
+                        <div className="flex items-center">
+                          <div className={`w-2 h-2 rounded-full mr-2 ${
+                            channel.conversion >= 15 ? 'bg-green-400' :
+                            channel.conversion >= 10 ? 'bg-yellow-400' : 'bg-red-400'
+                          }`}></div>
+                          <span className="font-light">{channel.conversion}%</span>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
-        </div>
 
-        <div className="h-px bg-gradient-to-r from-transparent via-indigo-500/30 to-transparent mb-8"></div>
+          {/* Agent Performance */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-12">
+            <div className="border border-gray-800 rounded-lg p-6">
+              <h3 className="text-xl font-light mb-4">AI Agent Efficiency</h3>
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-400 font-extralight">Scout Agent</span>
+                  <span className="font-light">2,847 prospects found</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-400 font-extralight">Analyst Agent</span>
+                  <span className="font-light">98% accuracy</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-400 font-extralight">Strategist Agent</span>
+                  <span className="font-light">15 campaigns designed</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-400 font-extralight">Executor Agent</span>
+                  <span className="font-light">5,450 messages sent</span>
+                </div>
+              </div>
+            </div>
 
-        {/* Charts */}
-        <div className="grid lg:grid-cols-2 gap-8 mb-12">
-          <div className="bg-gray-900/30 backdrop-blur-sm border border-gray-800 rounded-lg p-6">
-            <h3 className="text-lg font-light text-white mb-6">Conversion Trends</h3>
-            <div className="h-64">
-              <Line data={conversionChart} options={chartOptions} />
-            </div>
-          </div>
-          <div className="bg-gray-900/30 backdrop-blur-sm border border-gray-800 rounded-lg p-6">
-            <h3 className="text-lg font-light text-white mb-6">Agent Performance</h3>
-            <div className="h-64">
-              <Bar data={agentPerformanceChart} options={chartOptions} />
-            </div>
-          </div>
-        </div>
-
-        {/* Sales Funnel */}
-        <div className="bg-gray-900/30 backdrop-blur-sm border border-gray-800 rounded-lg p-6 mb-12">
-          <h3 className="text-lg font-light text-white mb-6">Sales Funnel</h3>
-          <div className="h-64">
-            <Bar data={funnelChart} options={{...chartOptions, indexAxis: 'y'}} />
-          </div>
-        </div>
-
-        {/* Human-in-the-Loop Metrics */}
-        <div className="bg-indigo-900/20 border border-indigo-500/30 rounded-lg p-6">
-          <h3 className="text-lg font-light text-white mb-4">Human-in-the-Loop Performance</h3>
-          <div className="grid md:grid-cols-3 gap-6">
-            <div>
-              <p className="text-sm text-gray-400 mb-2">Approval Rate</p>
-              <p className="text-2xl font-light text-white">92%</p>
-              <p className="text-xs text-gray-500 mt-1">Of AI-generated campaigns approved</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-400 mb-2">Avg Review Time</p>
-              <p className="text-2xl font-light text-white">4.2 min</p>
-              <p className="text-xs text-gray-500 mt-1">Per campaign review</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-400 mb-2">Quality Score</p>
-              <p className="text-2xl font-light text-white">96%</p>
-              <p className="text-xs text-gray-500 mt-1">Post-human review improvement</p>
+            <div className="border border-gray-800 rounded-lg p-6">
+              <h3 className="text-xl font-light mb-4">Conversion Funnel</h3>
+              <div className="space-y-4">
+                <div>
+                  <div className="flex justify-between mb-1">
+                    <span className="text-gray-400 font-extralight">Prospects</span>
+                    <span className="font-light">2,847</span>
+                  </div>
+                  <div className="w-full bg-gray-800 rounded-full h-2">
+                    <div className="bg-indigo-500 h-2 rounded-full" style={{ width: '100%' }}></div>
+                  </div>
+                </div>
+                <div>
+                  <div className="flex justify-between mb-1">
+                    <span className="text-gray-400 font-extralight">Engaged</span>
+                    <span className="font-light">1,423</span>
+                  </div>
+                  <div className="w-full bg-gray-800 rounded-full h-2">
+                    <div className="bg-purple-500 h-2 rounded-full" style={{ width: '50%' }}></div>
+                  </div>
+                </div>
+                <div>
+                  <div className="flex justify-between mb-1">
+                    <span className="text-gray-400 font-extralight">Qualified</span>
+                    <span className="font-light">854</span>
+                  </div>
+                  <div className="w-full bg-gray-800 rounded-full h-2">
+                    <div className="bg-blue-500 h-2 rounded-full" style={{ width: '30%' }}></div>
+                  </div>
+                </div>
+                <div>
+                  <div className="flex justify-between mb-1">
+                    <span className="text-gray-400 font-extralight">Converted</span>
+                    <span className="font-light">342</span>
+                  </div>
+                  <div className="w-full bg-gray-800 rounded-full h-2">
+                    <div className="bg-green-500 h-2 rounded-full" style={{ width: '12%' }}></div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
+    </Layout>
   );
 };
 

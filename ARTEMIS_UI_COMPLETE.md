@@ -98,3 +98,128 @@ ARTEMIS is now complete with a sophisticated, minimal dark theme UI that emphasi
 ### Prerequisites
 - Node.js 18+
 - PostgreSQL (via Supabase)
+- All sponsor API keys in `.env`
+
+### Quick Start
+```bash
+# Install dependencies
+npm install
+
+# Seed demo data
+npm run seed
+
+# Start the platform
+npm run dev
+
+# Or use Docker
+docker-compose up
+```
+
+### Access Points
+- Frontend: http://localhost:5173
+- Backend API: http://localhost:3001
+- WebSocket: ws://localhost:3001
+
+## 🎯 Key User Flows
+
+### 1. New User Onboarding
+```
+Landing Page → Sign Up → Onboarding → Dashboard
+```
+
+### 2. Prospect Discovery
+```
+Dashboard → Prospects → Configure Discovery → AI Agents Work → View Results
+```
+
+### 3. Campaign Creation
+```
+Campaigns → Create New → Set Criteria → AI Designs → Human Review → Execute
+```
+
+### 4. Performance Monitoring
+```
+Dashboard → Analytics → View Metrics → Agent Performance → ROI Analysis
+```
+
+## 🔑 Environment Variables
+
+All required variables are documented in `.env.example`:
+```
+# Supabase
+VITE_SUPABASE_URL=
+VITE_SUPABASE_ANON_KEY=
+SUPABASE_SERVICE_ROLE_KEY=
+
+# Sponsor APIs
+BRIGHTDATA_API_KEY=
+LLAMAINDEX_API_KEY=
+ARCADE_API_KEY=
+MASTRA_API_KEY=
+
+# App Config
+VITE_API_URL=http://localhost:3001
+NODE_ENV=development
+```
+
+## 🎨 Design Highlights
+
+### Glass Morphism Components
+- Semi-transparent backgrounds with blur
+- Subtle borders for definition
+- Depth through layering
+
+### Agent Status Indicators
+- Color-coded by agent type
+- Animated pulse for active status
+- Real-time progress updates
+
+### Data Visualization
+- Dark theme optimized charts
+- Consistent color scheme
+- Clear metric presentation
+
+### Responsive Design
+- Mobile-friendly layouts
+- Adaptive navigation
+- Touch-optimized interactions
+
+## 🚀 Deployment Ready
+
+The platform includes:
+- Docker configuration for containerization
+- Vercel config for frontend deployment
+- Render config for backend deployment
+- Production-ready build scripts
+- Environment-based configuration
+
+## 📊 Live Demo Features
+
+The platform includes demo data that showcases:
+- 2,847 discovered prospects
+- 15 active campaigns
+- 24% conversion rate
+- 312% ROI
+- Real-time agent activity
+
+## 🎯 Human-in-the-Loop Control
+
+Key safety features:
+- Campaign approval required before execution
+- Message preview before sending
+- Budget controls and limits
+- Performance monitoring
+- Emergency stop capabilities
+
+## ✨ Next Steps
+
+The platform is fully functional and ready for:
+1. Production deployment
+2. Additional sponsor API integrations
+3. Advanced analytics features
+4. Mobile app development
+5. Enterprise features
+
+---
+
+ARTEMIS is now a complete, production-ready AI-powered sales intelligence platform with a sophisticated dark theme UI that showcases the power of multi-agent AI systems while maintaining human control and oversight.

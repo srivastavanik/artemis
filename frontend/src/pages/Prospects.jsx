@@ -1,291 +1,208 @@
 import React, { useState, useEffect } from 'react';
-import { prospectService } from '../services/prospects.service';
-import ProspectTable from '../components/ProspectTable';
-import ProspectFilters from '../components/ProspectFilters';
+import Layout from '../components/Layout';
+import { prospectsService } from '../services/prospects.service';
 import ProspectDetailModal from '../components/ProspectDetailModal';
-import { websocketService } from '../services/websocket.service';
 
 const Prospects = () => {
   const [prospects, setProspects] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [discovering, setDiscovering] = useState(false);
   const [selectedProspect, setSelectedProspect] = useState(null);
-  const [filters, setFilters] = useState({
-    industry: '',
-    size: '',
-    location: '',
-    score: 0
-  });
+  const [loading, setLoading] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterScore, setFilterScore] = useState('all');
+  const [discovering, setDiscovering] = useState(false);
+
   const [discoveryConfig, setDiscoveryConfig] = useState({
     industry: '',
     companySize: '',
-    location: '',
-    technologies: [],
-    jobTitles: []
+    region: '',
+    technologies: '',
+    revenue: ''
   });
-  const [showDiscoveryModal, setShowDiscoveryModal] = useState(false);
 
   useEffect(() => {
-    fetchProspects();
-    
-    // Listen for real-time updates
-    const unsubscribe = websocketService.subscribe('prospect_discovered', (data) => {
-      setProspects(prev => [data, ...prev]);
-    });
+    loadProspects();
+  }, [filterScore]);
 
-    return () => unsubscribe();
-  }, [filters]);
-
-  const fetchProspects = async () => {
+  const loadProspects = async () => {
     try {
       setLoading(true);
-      const response = await prospectService.list(filters);
-      setProspects(response.data || []);
+      const data = await prospectsService.getAllProspects();
+      setProspects(data);
     } catch (error) {
-      console.error('Failed to fetch prospects:', error);
+      console.error('Error loading prospects:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleDiscover = async () => {
+  const handleDiscoverProspects = async () => {
     try {
       setDiscovering(true);
-      setShowDiscoveryModal(false);
-      
-      await prospectService.discover(discoveryConfig);
-      
-      // Scout agent will work in background
-      setTimeout(() => {
-        setDiscovering(false);
-        fetchProspects();
-      }, 3000);
+      await prospectsService.discoverProspects(discoveryConfig);
+      await loadProspects();
     } catch (error) {
-      console.error('Failed to start discovery:', error);
+      console.error('Error discovering prospects:', error);
+    } finally {
       setDiscovering(false);
     }
   };
 
-  const handleEnrich = async (prospectId) => {
-    try {
-      await prospectService.enrich(prospectId);
-      fetchProspects();
-    } catch (error) {
-      console.error('Failed to enrich prospect:', error);
-    }
-  };
-
-  const handleAnalyze = async (prospectId) => {
-    try {
-      await prospectService.analyze(prospectId);
-      fetchProspects();
-    } catch (error) {
-      console.error('Failed to analyze prospect:', error);
-    }
-  };
+  const filteredProspects = prospects.filter(prospect => {
+    const matchesSearch = 
+      prospect.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      prospect.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      prospect.email.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesScore = 
+      filterScore === 'all' || 
+      (filterScore === 'high' && prospect.score >= 80) ||
+      (filterScore === 'medium' && prospect.score >= 50 && prospect.score < 80) ||
+      (filterScore === 'low' && prospect.score < 50);
+    
+    return matchesSearch && matchesScore;
+  });
 
   return (
-    <div className="min-h-screen bg-black">
+    <Layout>
       <div className="container mx-auto px-6 py-8">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-3xl font-light tracking-tight text-white mb-2">
-              Prospects
-            </h1>
-            <p className="text-gray-400 font-extralight">
-              {prospects.length} prospects discovered • {prospects.filter(p => p.enrichment_status === 'enriched').length} enriched
-            </p>
+        <div className="mb-12">
+          <h1 className="text-4xl md:text-5xl font-light tracking-tight mb-4">
+            <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-purple-400">
+              Prospect
+            </span>{' '}
+            Discovery
+          </h1>
+          <p className="text-gray-400 font-extralight text-lg">
+            AI-powered lead identification and enrichment
+          </p>
+        </div>
+
+        {/* Search and Filter */}
+        <div className="flex flex-col md:flex-row gap-4 mb-8">
+          <div className="flex-1">
+            <input
+              type="text"
+              placeholder="Search by name, company, or email..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full bg-transparent border border-gray-800 rounded-md px-4 py-3 text-white placeholder-gray-600 focus:border-indigo-500 focus:outline-none transition-colors font-light"
+            />
           </div>
-          <button
-            onClick={() => setShowDiscoveryModal(true)}
-            className="bg-white text-black font-light rounded-md px-6 py-3 hover:bg-opacity-90 transition-all"
-            disabled={discovering}
+          <select
+            value={filterScore}
+            onChange={(e) => setFilterScore(e.target.value)}
+            className="bg-transparent border border-gray-800 rounded-md px-4 py-3 text-white focus:border-indigo-500 focus:outline-none transition-colors font-light"
           >
-            {discovering ? 'Discovering...' : 'Start AI Discovery'}
+            <option value="all">All scores</option>
+            <option value="high">High (80+)</option>
+            <option value="medium">Medium (50-79)</option>
+            <option value="low">Low (&lt;50)</option>
+          </select>
+          <button
+            onClick={handleDiscoverProspects}
+            disabled={discovering}
+            className="bg-white text-black font-light rounded-md px-6 py-3 hover:bg-opacity-90 transition-all disabled:opacity-50"
+          >
+            {discovering ? 'Discovering...' : 'Discover New Prospects'}
           </button>
         </div>
 
-        <div className="h-px bg-gradient-to-r from-transparent via-indigo-500/30 to-transparent mb-8"></div>
-
-        {/* Discovery Status */}
-        {discovering && (
-          <div className="mb-8 bg-indigo-900/20 border border-indigo-500/30 rounded-lg p-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
-                <div className="w-3 h-3 bg-indigo-400 rounded-full animate-pulse"></div>
-                <div>
-                  <h3 className="text-lg font-light text-white">Scout Agent Active</h3>
-                  <p className="text-sm text-gray-400">Scanning the web for prospects matching your criteria...</p>
-                </div>
-              </div>
-              <div className="text-sm text-indigo-300">
-                Powered by BrightData
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Filters */}
-        <ProspectFilters filters={filters} onFilterChange={setFilters} />
-
         {/* Prospects Table */}
-        <div className="bg-gray-900/30 backdrop-blur-sm border border-gray-800 rounded-lg overflow-hidden">
-          {loading ? (
-            <div className="p-12 text-center">
-              <div className="text-gray-400">Loading prospects...</div>
-            </div>
-          ) : prospects.length === 0 ? (
-            <div className="p-12 text-center">
-              <p className="text-gray-400 mb-4">No prospects found</p>
-              <button
-                onClick={() => setShowDiscoveryModal(true)}
-                className="text-indigo-400 hover:text-indigo-300 transition-colors"
-              >
-                Start discovering prospects →
-              </button>
-            </div>
-          ) : (
-            <ProspectTable
-              prospects={prospects}
-              onSelectProspect={setSelectedProspect}
-              onEnrich={handleEnrich}
-              onAnalyze={handleAnalyze}
-            />
-          )}
+        <div className="border border-gray-800 rounded-lg overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-gray-800">
+                  <th className="text-left py-4 px-6 font-light text-gray-400">Name</th>
+                  <th className="text-left py-4 px-6 font-light text-gray-400">Company</th>
+                  <th className="text-left py-4 px-6 font-light text-gray-400">Title</th>
+                  <th className="text-left py-4 px-6 font-light text-gray-400">Score</th>
+                  <th className="text-left py-4 px-6 font-light text-gray-400">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {loading ? (
+                  <tr>
+                    <td colSpan="5" className="text-center py-12 text-gray-400 font-extralight">
+                      Loading prospects...
+                    </td>
+                  </tr>
+                ) : filteredProspects.length === 0 ? (
+                  <tr>
+                    <td colSpan="5" className="text-center py-12 text-gray-400 font-extralight">
+                      No prospects found. Try adjusting your filters or discover new prospects.
+                    </td>
+                  </tr>
+                ) : (
+                  filteredProspects.map((prospect) => (
+                    <tr key={prospect.id} className="border-b border-gray-800 hover:bg-gray-900/30 transition-colors">
+                      <td className="py-4 px-6">
+                        <div>
+                          <p className="font-light">{prospect.name}</p>
+                          <p className="text-sm text-gray-400 font-extralight">{prospect.email}</p>
+                        </div>
+                      </td>
+                      <td className="py-4 px-6 font-light">{prospect.company}</td>
+                      <td className="py-4 px-6 font-light text-gray-300">{prospect.title}</td>
+                      <td className="py-4 px-6">
+                        <div className="flex items-center">
+                          <div className={`w-2 h-2 rounded-full mr-2 ${
+                            prospect.score >= 80 ? 'bg-green-400' :
+                            prospect.score >= 50 ? 'bg-yellow-400' : 'bg-red-400'
+                          }`}></div>
+                          <span className="font-light">{prospect.score}</span>
+                        </div>
+                      </td>
+                      <td className="py-4 px-6">
+                        <button
+                          onClick={() => setSelectedProspect(prospect)}
+                          className="text-indigo-400 hover:text-indigo-300 transition-colors font-light"
+                        >
+                          View Details
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
 
-        {/* AI Agent Status */}
-        <div className="mt-8 grid md:grid-cols-3 gap-6">
-          <div className="bg-gray-900/30 backdrop-blur-sm border border-gray-800 rounded-lg p-4">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-gray-400">Scout Agent</span>
-              <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-            </div>
-            <p className="text-lg font-light text-white">Discovery Active</p>
-            <p className="text-xs text-gray-500 mt-1">247 prospects found today</p>
+        {/* Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mt-8">
+          <div className="text-center">
+            <p className="text-3xl font-light">{prospects.length}</p>
+            <p className="text-gray-400 font-extralight mt-1">Prospects shown</p>
           </div>
-          <div className="bg-gray-900/30 backdrop-blur-sm border border-gray-800 rounded-lg p-4">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-gray-400">Analyst Agent</span>
-              <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-            </div>
-            <p className="text-lg font-light text-white">Enrichment Active</p>
-            <p className="text-xs text-gray-500 mt-1">98% data completeness</p>
+          <div className="text-center">
+            <p className="text-3xl font-light">
+              {prospects.filter(p => p.score >= 80).length}
+            </p>
+            <p className="text-gray-400 font-extralight mt-1">High quality leads</p>
           </div>
-          <div className="bg-gray-900/30 backdrop-blur-sm border border-gray-800 rounded-lg p-4">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-gray-400">LlamaIndex</span>
-              <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
-            </div>
-            <p className="text-lg font-light text-white">AI Analysis Ready</p>
-            <p className="text-xs text-gray-500 mt-1">Predictive scoring enabled</p>
+          <div className="text-center">
+            <p className="text-3xl font-light">
+              {prospects.length > 0 ? Math.round(prospects.reduce((acc, p) => acc + p.score, 0) / prospects.length) : 0}
+            </p>
+            <p className="text-gray-400 font-extralight mt-1">Average score</p>
+          </div>
+          <div className="text-center">
+            <p className="text-3xl font-light">24h</p>
+            <p className="text-gray-400 font-extralight mt-1">Last enrichment</p>
           </div>
         </div>
+
+        {/* Prospect Detail Modal */}
+        {selectedProspect && (
+          <ProspectDetailModal
+            prospect={selectedProspect}
+            onClose={() => setSelectedProspect(null)}
+          />
+        )}
       </div>
-
-      {/* Discovery Modal */}
-      {showDiscoveryModal && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-gray-900 border border-gray-800 rounded-lg p-8 max-w-2xl w-full mx-4">
-            <h2 className="text-2xl font-light text-white mb-6">Configure AI Discovery</h2>
-            
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm text-gray-400 mb-2">Industry</label>
-                <input
-                  type="text"
-                  value={discoveryConfig.industry}
-                  onChange={(e) => setDiscoveryConfig({...discoveryConfig, industry: e.target.value})}
-                  className="w-full bg-black border border-gray-800 rounded-md px-4 py-2 text-white focus:border-indigo-500 focus:outline-none"
-                  placeholder="e.g., Technology, Healthcare, Finance"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm text-gray-400 mb-2">Company Size</label>
-                <select
-                  value={discoveryConfig.companySize}
-                  onChange={(e) => setDiscoveryConfig({...discoveryConfig, companySize: e.target.value})}
-                  className="w-full bg-black border border-gray-800 rounded-md px-4 py-2 text-white focus:border-indigo-500 focus:outline-none"
-                >
-                  <option value="">Any size</option>
-                  <option value="1-10">1-10 employees</option>
-                  <option value="11-50">11-50 employees</option>
-                  <option value="51-200">51-200 employees</option>
-                  <option value="201-500">201-500 employees</option>
-                  <option value="500+">500+ employees</option>
-                </select>
-              </div>
-              
-              <div>
-                <label className="block text-sm text-gray-400 mb-2">Location</label>
-                <input
-                  type="text"
-                  value={discoveryConfig.location}
-                  onChange={(e) => setDiscoveryConfig({...discoveryConfig, location: e.target.value})}
-                  className="w-full bg-black border border-gray-800 rounded-md px-4 py-2 text-white focus:border-indigo-500 focus:outline-none"
-                  placeholder="e.g., San Francisco, New York, Remote"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm text-gray-400 mb-2">Technologies (comma-separated)</label>
-                <input
-                  type="text"
-                  value={discoveryConfig.technologies.join(', ')}
-                  onChange={(e) => setDiscoveryConfig({
-                    ...discoveryConfig, 
-                    technologies: e.target.value.split(',').map(t => t.trim()).filter(t => t)
-                  })}
-                  className="w-full bg-black border border-gray-800 rounded-md px-4 py-2 text-white focus:border-indigo-500 focus:outline-none"
-                  placeholder="e.g., React, AWS, Python"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm text-gray-400 mb-2">Target Job Titles (comma-separated)</label>
-                <input
-                  type="text"
-                  value={discoveryConfig.jobTitles.join(', ')}
-                  onChange={(e) => setDiscoveryConfig({
-                    ...discoveryConfig, 
-                    jobTitles: e.target.value.split(',').map(t => t.trim()).filter(t => t)
-                  })}
-                  className="w-full bg-black border border-gray-800 rounded-md px-4 py-2 text-white focus:border-indigo-500 focus:outline-none"
-                  placeholder="e.g., CTO, VP Sales, Head of Marketing"
-                />
-              </div>
-            </div>
-            
-            <div className="flex justify-end space-x-4 mt-8">
-              <button
-                onClick={() => setShowDiscoveryModal(false)}
-                className="px-6 py-2 text-gray-400 hover:text-white transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleDiscover}
-                className="bg-white text-black font-light rounded-md px-6 py-2 hover:bg-opacity-90 transition-all"
-              >
-                Start Discovery
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Prospect Detail Modal */}
-      {selectedProspect && (
-        <ProspectDetailModal
-          prospect={selectedProspect}
-          onClose={() => setSelectedProspect(null)}
-          onEnrich={() => handleEnrich(selectedProspect.id)}
-          onAnalyze={() => handleAnalyze(selectedProspect.id)}
-        />
-      )}
-    </div>
+    </Layout>
   );
 };
 
