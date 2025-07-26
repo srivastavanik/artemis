@@ -37,8 +37,9 @@ class AuthService {
       const { data: userProfile, error: profileError } = await this.supabase
         .from('users')
         .insert({
-          id: authData.user.id,
+          auth_id: authData.user.id,
           email: authData.user.email,
+          name: fullName,
           full_name: fullName,
           avatar_url: this.generateGravatar(email)
         })
@@ -77,7 +78,7 @@ class AuthService {
       const { data: userProfile, error: profileError } = await this.supabase
         .from('users')
         .select('*, workspaces(*)')
-        .eq('id', authData.user.id)
+        .eq('auth_id', authData.user.id)
         .single();
 
       if (profileError) throw profileError;
@@ -131,7 +132,7 @@ class AuthService {
       const { data: existingUser } = await this.supabase
         .from('users')
         .select('*, workspaces(*)')
-        .eq('id', authData.user.id)
+        .eq('auth_id', authData.user.id)
         .single();
 
       let userProfile = existingUser;
@@ -141,8 +142,9 @@ class AuthService {
         const { data: newUser, error: profileError } = await this.supabase
           .from('users')
           .insert({
-            id: authData.user.id,
+            auth_id: authData.user.id,
             email: authData.user.email,
+            name: authData.user.user_metadata.full_name || authData.user.email.split('@')[0],
             full_name: authData.user.user_metadata.full_name || authData.user.email.split('@')[0],
             avatar_url: authData.user.user_metadata.avatar_url || this.generateGravatar(authData.user.email),
             google_connected: true
@@ -157,7 +159,7 @@ class AuthService {
         await this.supabase
           .from('users')
           .update({ google_connected: true })
-          .eq('id', authData.user.id);
+          .eq('auth_id', authData.user.id);
       }
 
       // Generate JWT token
@@ -288,7 +290,7 @@ class AuthService {
       const { data: existingUser } = await this.supabase
         .from('users')
         .select('*, workspaces(*)')
-        .eq('id', authData.user.id)
+        .eq('auth_id', authData.user.id)
         .single();
 
       let userProfile = existingUser;
@@ -297,8 +299,9 @@ class AuthService {
         const { data: newUser, error: profileError } = await this.supabase
           .from('users')
           .insert({
-            id: authData.user.id,
+            auth_id: authData.user.id,
             email: authData.user.email,
+            name: authData.user.email.split('@')[0],
             full_name: authData.user.email.split('@')[0],
             avatar_url: this.generateGravatar(authData.user.email)
           })
