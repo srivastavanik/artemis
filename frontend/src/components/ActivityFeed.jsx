@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { 
   Mail, 
@@ -9,8 +9,10 @@ import {
   UserPlus,
   Activity
 } from 'lucide-react'
+import websocketService from '../services/websocket.service'
+import analyticsService from '../services/analytics.service'
 
-const activities = [
+const defaultActivities = [
   {
     id: 1,
     type: 'email',
@@ -80,6 +82,173 @@ const activities = [
 ]
 
 const ActivityFeed = () => {
+  const [activities, setActivities] = useState(defaultActivities);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    // Fetch initial activities
+    fetchActivities();
+
+    // Subscribe to WebSocket events
+    const unsubscribeProspect = websocketService.subscribe('prospect_update', (data) => {
+      addActivity({
+        type: 'prospect',
+        icon: UserPlus,
+        color: 'text-primary',
+        bg: 'bg-primary/10',
+        title: `Prospect ${data.action}: ${data.prospect?.first_name} ${data.prospect?.last_name}`,
+        description: data.prospect?.company_name || 'New prospect activity',
+        time: 'Just now',
+        user: 'Scout Agent'
+      });
+    });
+
+    const unsubscribeCampaign = websocketService.subscribe('campaign_update', (data) => {
+      addActivity({
+        type: 'campaign',
+        icon: Activity,
+        color: 'text-accent',
+        bg: 'bg-accent/10',
+        title: `Campaign ${data.status}: ${data.campaign?.name}`,
+        description: `${data.campaign?.prospects || 0} prospects targeted`,
+        time: 'Just now',
+        user: 'Executor Agent'
+      });
+    });
+
+    const unsubscribeMessage = websocketService.subscribe('message_sent', (data) => {
+      addActivity({
+        type: 'email',
+        icon: Mail,
+        color: 'text-primary',
+        bg: 'bg-primary/10',
+        title: `${data.channel} sent to ${data.recipientName}`,
+        description: data.subject || 'Message delivered successfully',
+        time: 'Just now',
+        user: 'Executor Agent'
+      });
+    });
+
+    const unsubscribeEngagement = websocketService.subscribe('engagement_update', (data) => {
+      const icons = {
+        'opened': Link2,
+        'clicked': Link2,
+        'replied': MessageSquare,
+        'meeting_scheduled': Calendar,
+        'download': FileText
+      };
+
+      addActivity({
+        type: data.type,
+        icon: icons[data.type] || Activity,
+        color: 'text-success',
+        bg: 'bg-success/10',
+        title: `${data.type.charAt(0).toUpperCase() + data.type.slice(1)} by ${data.prospectName}`,
+        description: data.description || 'Engagement activity',
+        time: 'Just now',
+        prospect: data.companyName
+      });
+    });
+
+    // Cleanup
+    return () => {
+      unsubscribeProspect();
+      unsubscribeCampaign();
+      unsubscribeMessage();
+      unsubscribeEngagement();
+    };
+  }, []);
+
+  const fetchActivities = async () => {
+    try {
+      const data = await analyticsService.getDashboardMetrics();
+      if (data && data.recentActivity) {
+        const formattedActivities = data.recentActivity.map((activity, index) => ({
+          id: Date.now() + index,
+          type: activity.type || 'activity',
+          icon: getIconForType(activity.type),
+          color: getColorForType(activity.type),
+          bg: getBgForType(activity.type),
+          title: activity.title || activity.description,
+          description: activity.details || '',
+          time: formatTime(activity.createdAt),
+          user: activity.agentName,
+          prospect: activity.prospectName
+        }));
+        setActivities(formattedActivities);
+      }
+    } catch (error) {
+      console.error('Failed to fetch activities:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const addActivity = (newActivity) => {
+    setActivities(prev => [
+      { ...newActivity, id: Date.now() },
+      ...prev.slice(0, 19) // Keep last 20 activities
+    ]);
+  };
+
+  const getIconForType = (type) => {
+    const iconMap = {
+      'email': Mail,
+      'linkedin': Link2,
+      'reply': MessageSquare,
+      'meeting': Calendar,
+      'download': FileText,
+      'prospect': UserPlus
+    };
+    return iconMap[type] || Activity;
+  };
+
+  const getColorForType = (type) => {
+    const colorMap = {
+      'email': 'text-primary',
+      'linkedin': 'text-accent',
+      'reply': 'text-success',
+      'meeting': 'text-warning',
+      'download': 'text-info',
+      'prospect': 'text-primary'
+    };
+    return colorMap[type] || 'text-primary';
+  };
+
+  const getBgForType = (type) => {
+    const bgMap = {
+      'email': 'bg-primary/10',
+      'linkedin': 'bg-accent/10',
+      'reply': 'bg-success/10',
+      'meeting': 'bg-warning/10',
+      'download': 'bg-info/10',
+      'prospect': 'bg-primary/10'
+    };
+    return bgMap[type] || 'bg-primary/10';
+  };
+
+  const formatTime = (timestamp) => {
+    if (!timestamp) return 'Just now';
+    
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diff = now - date;
+    
+    if (diff < 60000) return 'Just now';
+    if (diff < 3600000) return `${Math.floor(diff / 60000)} minutes ago`;
+    if (diff < 86400000) return `${Math.floor(diff / 3600000)} hours ago`;
+    return `${Math.floor(diff / 86400000)} days ago`;
+  };
+
+  if (isLoading) {
+    return (
+      <div className="glass-card">
+        <div className="flex items-center justify-center h-[400px]">
+          <div className="text-text-tertiary">Loading activities...</div>
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="glass-card">
       <div className="flex items-center justify-between mb-6">

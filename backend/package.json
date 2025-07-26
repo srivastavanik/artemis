@@ -18,18 +18,22 @@
   "author": "ARTEMIS Team",
   "license": "MIT",
   "dependencies": {
+    "@faker-js/faker": "^8.3.1",
     "@mastra/core": "^0.1.0",
+    "@pinecone-database/pinecone": "^6.1.2",
     "@supabase/supabase-js": "^2.38.4",
     "axios": "^1.6.2",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
     "express": "^4.18.2",
     "express-rate-limit": "^7.1.5",
+    "google-auth-library": "^10.2.0",
+    "googleapis": "^154.0.0",
     "jsonwebtoken": "^9.0.2",
     "llamaindex": "^0.0.45",
+    "nodemailer": "^7.0.5",
     "socket.io": "^4.7.2",
-    "winston": "^3.11.0",
-    "@faker-js/faker": "^8.3.1"
+    "winston": "^3.11.0"
   },
   "devDependencies": {
     "jest": "^29.7.0",

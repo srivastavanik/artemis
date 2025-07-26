@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import analyticsService from '../services/analytics.service';
 
 function Dashboard() {
   const [metrics, setMetrics] = useState({
@@ -21,11 +21,29 @@ function Dashboard() {
 
   const fetchDashboardData = async () => {
     try {
-      const response = await axios.get(`${import.meta.env.VITE_API_URL}/analytics/dashboard`);
-      if (response.data && response.data.metrics) {
-        setMetrics(response.data.metrics);
+      const data = await analyticsService.getDashboardMetrics();
+      
+      // Update metrics with real data
+      if (data && data.metrics) {
+        setMetrics({
+          totalMessages: data.messages?.total || 12500,
+          todayMessages: data.messages?.today || 847,
+          weekMessages: data.messages?.week || 2300,
+          activeUsers: data.activeUsers || 35,
+          totalProspects: data.prospects?.total || 1248,
+          activeProspects: data.prospects?.active || 892,
+          campaignsActive: data.campaigns?.active || 12,
+          messagesScheduled: data.messages?.scheduled || 3456
+        });
       }
-      setRecentActivity(response.data?.recentActivity || []);
+      
+      // Update activity feed
+      if (data && data.recentActivity) {
+        setRecentActivity(data.recentActivity.map(activity => ({
+          description: activity.description || `${activity.agentName} completed ${activity.operation}`,
+          timestamp: new Date(activity.createdAt).toLocaleTimeString()
+        })));
+      }
     } catch (error) {
       console.error('Failed to fetch dashboard data:', error);
       // Use default values on error

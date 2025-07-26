@@ -445,21 +445,17 @@ class ExecutorAgent {
           // Schedule with Arcade based on channel
           let result;
           if (message.channel === 'email') {
+            const prospect = await supabaseService.getProspectById(message.prospectId);
             result = await arcadeService.sendEmail(
-              { 
-                id: message.prospectId,
-                email: await this.getProspectEmail(message.prospectId),
-                ...message.personalizationData 
-              },
+              prospect,
               {
                 id: dbMessage.id,
                 subject: message.subject,
                 content: message.content,
-                campaignId: message.campaignId
-              },
-              {
+                campaignId: message.campaignId,
                 scheduledFor: message.scheduledFor
-              }
+              },
+              campaign.settings || {}
             );
           } else if (message.channel === 'linkedin') {
             const prospect = await supabaseService.getProspectById(message.prospectId);

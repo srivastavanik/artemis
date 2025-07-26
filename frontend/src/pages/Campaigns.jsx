@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import campaignsService from '../services/campaigns.service';
 
 function Campaigns() {
   const [campaigns, setCampaigns] = useState([]);
@@ -17,8 +17,8 @@ function Campaigns() {
 
   const fetchCampaigns = async () => {
     try {
-      const response = await axios.get(`${import.meta.env.VITE_API_URL}/campaigns`);
-      setCampaigns(response.data.data || []);
+      const response = await campaignsService.getCampaigns();
+      setCampaigns(response.data || []);
     } catch (error) {
       console.error('Failed to fetch campaigns:', error);
       // Demo data
@@ -29,6 +29,34 @@ function Campaigns() {
       ]);
     } finally {
       setLoading(false);
+    }
+  };
+  
+  const handleCreateCampaign = async () => {
+    if (!newCampaign.name || !newCampaign.targetAudience) return;
+    
+    try {
+      const campaignData = {
+        name: newCampaign.name,
+        description: newCampaign.description,
+        targetCriteria: {
+          titles: newCampaign.targetAudience.split(',').map(t => t.trim())
+        },
+        channels: [selectedChannel],
+        messageTemplates: {
+          [selectedChannel]: {
+            template: `Hi {{firstName}}, I noticed you're the {{jobTitle}} at {{company}} and wanted to reach out...`
+          }
+        }
+      };
+      
+      await campaignsService.createCampaign(campaignData);
+      fetchCampaigns();
+      
+      // Reset form
+      setNewCampaign({ name: '', description: '', targetAudience: '' });
+    } catch (error) {
+      console.error('Failed to create campaign:', error);
     }
   };
 
@@ -116,7 +144,10 @@ function Campaigns() {
             </div>
           </div>
 
-          <button className="btn-primary">
+          <button 
+            className="btn-primary"
+            onClick={handleCreateCampaign}
+          >
             Generate Campaign with AI
           </button>
         </div>

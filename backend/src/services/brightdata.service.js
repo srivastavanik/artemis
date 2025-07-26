@@ -6,47 +6,41 @@ class BrightDataService {
   constructor() {
     this.apiKey = config.brightData.apiKey;
     this.baseUrl = config.brightData.baseUrl;
-    this.cache = new Map();
-    this.retryAttempts = 3;
-    this.retryDelay = 1000;
+    this.datasets = {
+      people: 'people_dataset',
+      companies: 'companies_dataset',
+      linkedin: 'linkedin_profiles'
+    };
   }
 
   /**
-   * Search for a person across multiple data sources
+   * Search for person data using BrightData's Data Collector API
    */
   async searchPerson({ name, company, email, linkedinUrl }) {
-    const cacheKey = `person:${name}:${company}:${email}`;
-    
-    // Check cache first
-    if (this.cache.has(cacheKey)) {
-      const cached = this.cache.get(cacheKey);
-      if (cached.expires > Date.now()) {
-        logger.debug('BrightData cache hit', { cacheKey });
-        return cached.data;
-      }
-    }
-
     try {
-      const searchQuery = this.buildSearchQuery({ name, company, email, linkedinUrl });
-      
-      const response = await this.makeRequest('/search/person', {
-        query: searchQuery,
-        sources: ['linkedin', 'twitter', 'github', 'news', 'company_websites'],
-        depth: 'comprehensive',
-        include_social_profiles: true,
-        include_recent_activity: true,
-        include_company_info: true
-      });
+      // BrightData uses Data Collector API for people search
+      const searchParams = {
+        auth: {
+          api_token: this.apiKey
+        },
+        input: {
+          search_terms: []
+        }
+      };
 
-      const enrichedData = this.processPersonData(response.data);
-      
-      // Cache for 24 hours
-      this.cache.set(cacheKey, {
-        data: enrichedData,
-        expires: Date.now() + 24 * 60 * 60 * 1000
-      });
+      // Build search query
+      if (name) searchParams.input.search_terms.push({ type: 'name', value: name });
+      if (company) searchParams.input.search_terms.push({ type: 'company', value: company });
+      if (email) searchParams.input.search_terms.push({ type: 'email', value: email });
+      if (linkedinUrl) searchParams.input.search_terms.push({ type: 'linkedin_url', value: linkedinUrl });
 
-      return enrichedData;
+      const response = await this.makeRequest('/datasets/people/search', searchParams);
+
+      if (response.data && response.data.results) {
+        return response.data.results.map(result => this.transformPersonData(result));
+      }
+
+      return [];
     } catch (error) {
       logger.error('BrightData person search failed', { error: error.message });
       throw error;
@@ -54,301 +48,306 @@ class BrightDataService {
   }
 
   /**
-   * Monitor a prospect for trigger events
+   * Scrape company data from website
    */
-  async setupMonitoring(prospectId, triggers) {
+  async scrapeCompanyWebsite(websiteUrl) {
     try {
-      const response = await this.makeRequest('/monitor/create', {
-        entity_id: prospectId,
-        entity_type: 'person',
-        triggers: triggers || [
-          'job_change',
-          'company_funding',
-          'technology_adoption',
-          'social_activity_spike',
-          'company_news',
-          'competitor_mention'
-        ],
-        webhook_url: `${process.env.API_URL}/webhooks/brightdata/trigger`,
-        frequency: 'real_time'
-      });
+      const scrapeParams = {
+        auth: {
+          api_token: this.apiKey
+        },
+        input: {
+          url: websiteUrl,
+          data_points: [
+            'company_name',
+            'industry',
+            'employee_count',
+            'founded_year',
+            'headquarters',
+            'description',
+            'technologies',
+            'social_links',
+            'key_people',
+            'contact_info'
+          ]
+        }
+      };
 
-      return response.data;
-    } catch (error) {
-      logger.error('BrightData monitoring setup failed', { error: error.message });
-      throw error;
-    }
-  }
-
-  /**
-   * Get company information
-   */
-  async getCompanyInfo(domain) {
-    const cacheKey = `company:${domain}`;
-    
-    if (this.cache.has(cacheKey)) {
-      const cached = this.cache.get(cacheKey);
-      if (cached.expires > Date.now()) {
-        return cached.data;
-      }
-    }
-
-    try {
-      const response = await this.makeRequest('/company/info', {
-        domain,
-        include_technologies: true,
-        include_funding: true,
-        include_employees: true,
-        include_news: true,
-        include_competitors: true
-      });
-
-      const companyData = this.processCompanyData(response.data);
+      const response = await this.makeRequest('/scraper/company', scrapeParams);
       
-      // Cache for 7 days
-      this.cache.set(cacheKey, {
-        data: companyData,
-        expires: Date.now() + 7 * 24 * 60 * 60 * 1000
-      });
-
-      return companyData;
+      return this.transformCompanyData(response.data);
     } catch (error) {
-      logger.error('BrightData company info failed', { error: error.message });
+      logger.error('BrightData company scraping failed', { error: error.message });
       throw error;
     }
   }
 
   /**
-   * Search for buying signals
+   * Scrape LinkedIn profile data
    */
-  async findBuyingSignals(company) {
+  async scrapeLinkedInProfile(linkedinUrl) {
     try {
-      const response = await this.makeRequest('/signals/buying', {
-        company,
-        signal_types: [
-          'job_postings',
-          'technology_mentions',
-          'competitor_switching',
-          'pain_point_mentions',
-          'budget_indicators',
-          'growth_indicators'
-        ],
-        time_range: '30d',
-        confidence_threshold: 0.7
-      });
+      const scrapeParams = {
+        auth: {
+          api_token: this.apiKey
+        },
+        input: {
+          url: linkedinUrl,
+          data_points: [
+            'full_name',
+            'current_position',
+            'company',
+            'location',
+            'about',
+            'experience',
+            'education',
+            'skills',
+            'languages',
+            'recent_activity'
+          ]
+        }
+      };
 
-      return this.processBuyingSignals(response.data);
+      const response = await this.makeRequest('/scraper/linkedin', scrapeParams);
+      
+      return this.transformLinkedInData(response.data);
     } catch (error) {
-      logger.error('BrightData buying signals search failed', { error: error.message });
+      logger.error('BrightData LinkedIn scraping failed', { error: error.message });
       throw error;
     }
   }
 
   /**
-   * Build search query from available parameters
+   * Bulk enrich multiple prospects
    */
-  buildSearchQuery({ name, company, email, linkedinUrl }) {
-    const parts = [];
-    
-    if (name) parts.push(`name:"${name}"`);
-    if (company) parts.push(`company:"${company}"`);
-    if (email) parts.push(`email:"${email}"`);
-    if (linkedinUrl) parts.push(`linkedin:"${linkedinUrl}"`);
-    
-    return parts.join(' AND ');
+  async bulkEnrichProspects(prospects) {
+    try {
+      const enrichmentRequests = prospects.map(prospect => ({
+        id: prospect.id,
+        search_params: {
+          name: `${prospect.firstName} ${prospect.lastName}`,
+          company: prospect.companyName,
+          email: prospect.email
+        }
+      }));
+
+      const response = await this.makeRequest('/bulk/enrich', {
+        auth: {
+          api_token: this.apiKey
+        },
+        requests: enrichmentRequests
+      });
+
+      return response.data.results;
+    } catch (error) {
+      logger.error('BrightData bulk enrichment failed', { error: error.message });
+      throw error;
+    }
   }
 
   /**
-   * Process raw person data into structured format
+   * Monitor data changes via webhook
    */
-  processPersonData(rawData) {
+  async setupWebhook(callbackUrl, events = ['profile_update', 'company_update']) {
+    try {
+      const response = await this.makeRequest('/webhooks/create', {
+        auth: {
+          api_token: this.apiKey
+        },
+        callback_url: callbackUrl,
+        events: events
+      });
+
+      return {
+        webhookId: response.data.webhook_id,
+        status: 'active'
+      };
+    } catch (error) {
+      logger.error('BrightData webhook setup failed', { error: error.message });
+      throw error;
+    }
+  }
+
+  /**
+   * Get real-time company signals
+   */
+  async getCompanySignals(companyDomain) {
+    try {
+      const response = await this.makeRequest('/signals/company', {
+        auth: {
+          api_token: this.apiKey
+        },
+        domain: companyDomain,
+        signal_types: [
+          'funding_rounds',
+          'leadership_changes',
+          'product_launches',
+          'hiring_trends',
+          'tech_stack_changes',
+          'news_mentions'
+        ]
+      });
+
+      return response.data.signals || [];
+    } catch (error) {
+      logger.error('BrightData company signals failed', { error: error.message });
+      throw error;
+    }
+  }
+
+  /**
+   * Search for similar companies
+   */
+  async findSimilarCompanies(companyDomain, limit = 10) {
+    try {
+      const response = await this.makeRequest('/companies/similar', {
+        auth: {
+          api_token: this.apiKey
+        },
+        domain: companyDomain,
+        limit: limit,
+        include_fields: [
+          'domain',
+          'name',
+          'industry',
+          'employee_count',
+          'revenue_range',
+          'technologies'
+        ]
+      });
+
+      return response.data.companies || [];
+    } catch (error) {
+      logger.error('BrightData similar companies search failed', { error: error.message });
+      throw error;
+    }
+  }
+
+  /**
+   * Transform person data from BrightData format
+   */
+  transformPersonData(rawData) {
     return {
-      identity: {
-        fullName: rawData.full_name,
-        firstName: rawData.first_name,
-        lastName: rawData.last_name,
-        email: rawData.primary_email,
-        alternativeEmails: rawData.alternative_emails || [],
-        phone: rawData.phone_numbers?.[0],
+      fullName: rawData.full_name || `${rawData.first_name || ''} ${rawData.last_name || ''}`.trim(),
+      firstName: rawData.first_name,
+      lastName: rawData.last_name,
+      email: rawData.email,
+      phone: rawData.phone,
+      jobTitle: rawData.job_title,
+      company: rawData.company_name,
+      companyDomain: rawData.company_domain,
+      linkedinUrl: rawData.linkedin_url,
+      location: rawData.location,
+      seniority: rawData.seniority_level,
+      department: rawData.department,
+      professionalSummary: rawData.bio || rawData.summary,
+      skills: rawData.skills || [],
+      experience: this.transformExperience(rawData.experience || []),
+      education: this.transformEducation(rawData.education || []),
+      socialProfiles: rawData.social_profiles || {},
+      lastUpdated: new Date(rawData.last_updated || Date.now())
+    };
+  }
+
+  /**
+   * Transform company data from BrightData format
+   */
+  transformCompanyData(rawData) {
+    return {
+      name: rawData.company_name,
+      domain: rawData.domain,
+      industry: rawData.industry,
+      subIndustry: rawData.sub_industry,
+      employeeCount: rawData.employee_count,
+      employeeRange: rawData.employee_range,
+      foundedYear: rawData.founded_year,
+      headquarters: {
+        city: rawData.hq_city,
+        state: rawData.hq_state,
+        country: rawData.hq_country,
+        address: rawData.hq_address
+      },
+      description: rawData.description,
+      revenue: rawData.revenue_range,
+      funding: {
+        totalRaised: rawData.total_funding,
+        lastRound: rawData.last_funding_round,
+        investors: rawData.investors || []
+      },
+      technologies: rawData.tech_stack || [],
+      socialLinks: {
+        linkedin: rawData.linkedin_url,
+        twitter: rawData.twitter_url,
+        facebook: rawData.facebook_url
+      },
+      keyPeople: rawData.leadership || [],
+      recentNews: rawData.recent_news || []
+    };
+  }
+
+  /**
+   * Transform LinkedIn data
+   */
+  transformLinkedInData(rawData) {
+    return {
+      profile: {
+        name: rawData.full_name,
+        headline: rawData.headline,
         location: rawData.location,
-        timezone: rawData.timezone
+        about: rawData.about,
+        currentPosition: rawData.current_position
       },
-      professional: {
-        currentTitle: rawData.current_position?.title,
-        currentCompany: rawData.current_position?.company,
-        department: rawData.current_position?.department,
-        seniority: rawData.seniority_level,
-        yearsInRole: rawData.years_in_current_role,
-        previousRoles: rawData.work_history || [],
-        skills: rawData.skills || [],
-        education: rawData.education || []
-      },
-      social: {
-        linkedinUrl: rawData.linkedin_url,
-        linkedinConnections: rawData.linkedin_connections,
-        twitterHandle: rawData.twitter_handle,
-        twitterFollowers: rawData.twitter_followers,
-        githubUsername: rawData.github_username,
-        recentPosts: rawData.recent_social_posts || [],
-        engagementRate: rawData.social_engagement_rate
-      },
-      behavioral: {
-        communicationPreference: this.inferCommunicationPreference(rawData),
-        bestTimeToContact: this.inferBestContactTime(rawData),
-        interests: rawData.detected_interests || [],
-        personalityTraits: rawData.personality_indicators || [],
-        writingStyle: rawData.writing_style_analysis
-      },
-      companyContext: {
-        companySize: rawData.company_info?.size,
-        industry: rawData.company_info?.industry,
-        companyGrowthRate: rawData.company_info?.growth_rate,
-        recentNews: rawData.company_info?.recent_news || [],
-        technologies: rawData.company_info?.tech_stack || []
-      },
-      metadata: {
-        lastUpdated: new Date().toISOString(),
-        dataCompleteness: this.calculateDataCompleteness(rawData),
-        confidenceScore: rawData.confidence_score || 0.8
+      experience: rawData.experience || [],
+      education: rawData.education || [],
+      skills: rawData.skills || [],
+      languages: rawData.languages || [],
+      recentActivity: {
+        posts: rawData.recent_posts || [],
+        articles: rawData.recent_articles || [],
+        lastActive: rawData.last_activity_date
       }
     };
   }
 
   /**
-   * Process company data
+   * Transform experience data
    */
-  processCompanyData(rawData) {
-    return {
-      basics: {
-        name: rawData.name,
-        domain: rawData.domain,
-        description: rawData.description,
-        industry: rawData.industry,
-        subIndustry: rawData.sub_industry,
-        founded: rawData.founded_year,
-        headquarters: rawData.headquarters,
-        website: rawData.website
-      },
-      metrics: {
-        employeeCount: rawData.employee_count,
-        employeeGrowthRate: rawData.employee_growth_rate,
-        estimatedRevenue: rawData.estimated_revenue,
-        fundingTotal: rawData.total_funding,
-        lastFundingRound: rawData.last_funding_round,
-        valuation: rawData.valuation
-      },
-      technology: {
-        techStack: rawData.technologies || [],
-        recentAdoptions: rawData.recent_tech_adoptions || [],
-        cloudProviders: rawData.cloud_providers || [],
-        securityTools: rawData.security_tools || [],
-        marketingTools: rawData.marketing_tools || []
-      },
-      market: {
-        competitors: rawData.competitors || [],
-        marketPosition: rawData.market_position,
-        keyDifferentiators: rawData.differentiators || [],
-        targetMarket: rawData.target_market,
-        customerBase: rawData.customer_segments || []
-      },
-      signals: {
-        recentNews: rawData.recent_news || [],
-        jobPostings: rawData.open_positions || [],
-        executiveChanges: rawData.leadership_changes || [],
-        productLaunches: rawData.recent_products || [],
-        partnerships: rawData.recent_partnerships || []
-      }
-    };
+  transformExperience(experienceList) {
+    return experienceList.map(exp => ({
+      title: exp.title,
+      company: exp.company_name,
+      duration: exp.duration,
+      startDate: exp.start_date,
+      endDate: exp.end_date,
+      description: exp.description,
+      location: exp.location
+    }));
   }
 
   /**
-   * Process buying signals
+   * Transform education data
    */
-  processBuyingSignals(rawSignals) {
-    return rawSignals.map(signal => ({
-      type: signal.signal_type,
-      strength: signal.confidence_score,
-      source: signal.source,
-      timestamp: signal.detected_at,
-      description: signal.description,
-      relatedData: signal.supporting_data,
-      suggestedAction: this.getSuggestedAction(signal)
-    })).sort((a, b) => b.strength - a.strength);
+  transformEducation(educationList) {
+    return educationList.map(edu => ({
+      institution: edu.school_name,
+      degree: edu.degree,
+      fieldOfStudy: edu.field_of_study,
+      startYear: edu.start_year,
+      endYear: edu.end_year
+    }));
   }
 
   /**
-   * Infer communication preferences from data
+   * Make HTTP request to BrightData API
    */
-  inferCommunicationPreference(data) {
-    const preferences = [];
-    
-    if (data.email_response_rate > 0.7) preferences.push('email');
-    if (data.linkedin_activity_level === 'high') preferences.push('linkedin');
-    if (data.twitter_activity_level === 'high') preferences.push('twitter');
-    if (data.calendar_availability?.length > 0) preferences.push('calendar');
-    
-    return preferences[0] || 'email';
-  }
-
-  /**
-   * Infer best time to contact
-   */
-  inferBestContactTime(data) {
-    // Analyze social media posting times, email response times, etc.
-    const activityPatterns = data.activity_patterns || {};
-    const timezone = data.timezone || 'America/New_York';
-    
-    return {
-      timezone,
-      bestDays: activityPatterns.most_active_days || ['Tuesday', 'Wednesday', 'Thursday'],
-      bestHours: activityPatterns.most_active_hours || ['9AM-11AM', '2PM-4PM'],
-      avoidTimes: activityPatterns.inactive_periods || ['Friday afternoon', 'Monday morning']
-    };
-  }
-
-  /**
-   * Calculate data completeness score
-   */
-  calculateDataCompleteness(data) {
-    const fields = [
-      'full_name', 'email', 'current_position', 'linkedin_url',
-      'company_info', 'work_history', 'skills', 'recent_activity'
-    ];
-    
-    const filledFields = fields.filter(field => data[field] && 
-      (Array.isArray(data[field]) ? data[field].length > 0 : true)
-    );
-    
-    return filledFields.length / fields.length;
-  }
-
-  /**
-   * Get suggested action based on signal
-   */
-  getSuggestedAction(signal) {
-    const actionMap = {
-      'job_posting': 'Reach out with solution for mentioned role requirements',
-      'technology_mention': 'Highlight integration capabilities with mentioned tech',
-      'competitor_switching': 'Emphasize differentiators and switching incentives',
-      'pain_point_mention': 'Lead with solution to specific pain point',
-      'budget_indicator': 'Include ROI calculations and pricing options',
-      'growth_indicator': 'Focus on scalability and growth support'
-    };
-    
-    return actionMap[signal.signal_type] || 'Personalized outreach recommended';
-  }
-
-  /**
-   * Make HTTP request with retry logic
-   */
-  async makeRequest(endpoint, data, attempt = 1) {
+  async makeRequest(endpoint, data, method = 'POST') {
     try {
       const response = await axios({
-        method: 'POST',
+        method,
         url: `${this.baseUrl}${endpoint}`,
         headers: {
-          'Authorization': `Bearer ${this.apiKey}`,
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.apiKey}`
         },
         data,
         timeout: 30000
@@ -356,17 +355,19 @@ class BrightDataService {
 
       return response.data;
     } catch (error) {
-      if (attempt < this.retryAttempts && error.response?.status >= 500) {
-        logger.warn(`BrightData request failed, retrying...`, { 
-          attempt, 
-          error: error.message 
-        });
-        
-        await new Promise(resolve => 
-          setTimeout(resolve, this.retryDelay * Math.pow(2, attempt - 1))
-        );
-        
-        return this.makeRequest(endpoint, data, attempt + 1);
+      logger.error('BrightData API error', { 
+        endpoint, 
+        error: error.message,
+        status: error.response?.status,
+        data: error.response?.data 
+      });
+
+      // Handle specific BrightData error codes
+      if (error.response?.status === 429) {
+        throw new Error('Rate limit exceeded. Please try again later.');
+      }
+      if (error.response?.status === 401) {
+        throw new Error('Invalid API key. Please check your BrightData credentials.');
       }
       
       throw new Error(`BrightData API error: ${error.message}`);
@@ -374,11 +375,16 @@ class BrightDataService {
   }
 
   /**
-   * Clear cache
+   * Validate webhook signature
    */
-  clearCache() {
-    this.cache.clear();
-    logger.info('BrightData cache cleared');
+  validateWebhookSignature(signature, payload) {
+    const crypto = require('crypto');
+    const expectedSignature = crypto
+      .createHmac('sha256', this.apiKey)
+      .update(JSON.stringify(payload))
+      .digest('hex');
+    
+    return signature === expectedSignature;
   }
 }
 

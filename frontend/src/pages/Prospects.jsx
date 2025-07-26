@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import prospectsService from '../services/prospects.service';
 
 function Prospects() {
   const [prospects, setProspects] = useState([]);
@@ -16,12 +16,12 @@ function Prospects() {
 
   const fetchProspects = async () => {
     try {
-      const params = new URLSearchParams();
-      if (filters.search) params.append('name', filters.search);
-      if (filters.minScore > 0) params.append('minScore', filters.minScore);
+      const filterParams = {};
+      if (filters.search) filterParams.name = filters.search;
+      if (filters.minScore > 0) filterParams.minScore = filters.minScore;
       
-      const response = await axios.get(`${import.meta.env.VITE_API_URL}/prospects?${params}`);
-      setProspects(response.data.data || []);
+      const response = await prospectsService.getProspects(filterParams);
+      setProspects(response.data || []);
     } catch (error) {
       console.error('Failed to fetch prospects:', error);
       // Use demo data on error
@@ -37,10 +37,30 @@ function Prospects() {
 
   const handleEnrichProspect = async (prospectId) => {
     try {
-      await axios.post(`${import.meta.env.VITE_API_URL}/prospects/${prospectId}/enrich`);
+      await prospectsService.enrichProspect(prospectId);
       fetchProspects();
     } catch (error) {
       console.error('Failed to enrich prospect:', error);
+    }
+  };
+  
+  const handleDiscoverProspects = async () => {
+    setLoading(true);
+    try {
+      const searchCriteria = {
+        company: filters.search,
+        targetTitles: ['VP Sales', 'Head of Sales', 'VP Marketing', 'CMO']
+      };
+      
+      const response = await prospectsService.discoverProspects(searchCriteria);
+      
+      if (response.prospects) {
+        setProspects(response.prospects);
+      }
+    } catch (error) {
+      console.error('Failed to discover prospects:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -92,7 +112,10 @@ function Prospects() {
               </select>
             </div>
             <div className="flex items-end">
-              <button className="btn-primary w-full">
+              <button 
+                className="btn-primary w-full"
+                onClick={handleDiscoverProspects}
+              >
                 Discover New Prospects
               </button>
             </div>

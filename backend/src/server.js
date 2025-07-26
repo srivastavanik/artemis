@@ -9,6 +9,8 @@ import { logger } from './utils/logger.js';
 import prospectRoutes from './routes/prospects.routes.js';
 import campaignRoutes from './routes/campaigns.routes.js';
 import analyticsRoutes from './routes/analytics.routes.js';
+import webhookRoutes from './routes/webhooks.routes.js';
+import testRoutes from './routes/test.routes.js';
 import executorAgent from './agents/executor.agent.js';
 import websocketService from './services/websocket.service.js';
 import { authenticate, optionalAuth } from './middleware/auth.middleware.js';
@@ -35,8 +37,26 @@ app.use(rateLimit.general);
 
 // Middleware
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
-  credentials: true
+  origin: function(origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    // Allow any localhost port in development
+    if (process.env.NODE_ENV !== 'production' && origin.includes('localhost')) {
+      return callback(null, true);
+    }
+    
+    // In production, use the configured frontend URL
+    const allowedOrigin = process.env.FRONTEND_URL || 'http://localhost:5173';
+    if (origin === allowedOrigin) {
+      return callback(null, true);
+    }
+    
+    return callback(new Error('Not allowed by CORS'));
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
@@ -81,21 +101,13 @@ app.use('/api/prospects', optionalAuth, rateLimit.enrichment, prospectRoutes);
 app.use('/api/campaigns', optionalAuth, rateLimit.campaigns, campaignRoutes);
 app.use('/api/analytics', optionalAuth, rateLimit.analytics, analyticsRoutes);
 
-// Webhook endpoint for Arcade
-app.post('/webhooks/arcade', async (req, res) => {
-  try {
-    // Verify webhook signature if needed
-    const signature = req.headers['x-arcade-signature'];
-    
-    // Process webhook
-    await executorAgent.handleWebhook(req.body);
-    
-    res.status(200).json({ received: true });
-  } catch (error) {
-    logger.error('Webhook processing failed', { error: error.message });
-    res.status(500).json({ error: 'Webhook processing failed' });
-  }
-});
+// Webhook routes (no auth required for external webhooks)
+app.use('/api/webhooks', webhookRoutes);
+
+// Test routes (only in development)
+if (process.env.NODE_ENV !== 'production') {
+  app.use('/api/test', testRoutes);
+}
 
 // Static files for frontend (in production)
 if (process.env.NODE_ENV === 'production') {
@@ -135,10 +147,11 @@ app.use((req, res) => {
 // Start server
 const PORT = process.env.PORT || config.port;
 
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   logger.info(`Server running on port ${PORT}`, {
     environment: process.env.NODE_ENV,
-    nodeVersion: process.version
+    nodeVersion: process.version,
+    websocket: 'enabled'
   });
   
   // Log available routes
@@ -161,12 +174,18 @@ app.listen(PORT, () => {
       'GET /api/analytics/roi'
     ]
   });
+  
+  // Log WebSocket status
+  logger.info('WebSocket server ready', {
+    transport: 'ws://',
+    port: PORT
+  });
 });
 
 // Graceful shutdown
 process.on('SIGTERM', () => {
   logger.info('SIGTERM signal received: closing HTTP server');
-  app.close(() => {
+  server.close(() => {
     logger.info('HTTP server closed');
     process.exit(0);
   });

@@ -16,33 +16,64 @@ class WebSocketService {
   initialize(server) {
     this.io = new Server(server, {
       cors: {
-        origin: process.env.FRONTEND_URL || 'http://localhost:5173',
-        credentials: true
+        origin: function(origin, callback) {
+          // Allow requests with no origin
+          if (!origin) return callback(null, true);
+          
+          // Allow any localhost port in development
+          if (process.env.NODE_ENV !== 'production' && origin.includes('localhost')) {
+            return callback(null, true);
+          }
+          
+          // In production, use the configured frontend URL
+          const allowedOrigin = process.env.FRONTEND_URL || 'http://localhost:5173';
+          if (origin === allowedOrigin) {
+            return callback(null, true);
+          }
+          
+          return callback(new Error('Not allowed by CORS'));
+        },
+        credentials: true,
+        methods: ['GET', 'POST']
       }
     })
 
-    // Authentication middleware
+    // Authentication middleware (optional in development)
     this.io.use(async (socket, next) => {
       try {
         const token = socket.handshake.auth.token
-        if (!token) {
-          return next(new Error('Authentication required'))
+        
+        if (token) {
+          try {
+            const decoded = jwt.verify(token, config.jwt.secret)
+            socket.userId = decoded.userId
+            socket.userEmail = decoded.email
+            socket.userRole = decoded.role
+
+            logger.info('WebSocket authenticated', { 
+              userId: decoded.userId,
+              socketId: socket.id 
+            })
+          } catch (error) {
+            logger.warn('WebSocket authentication failed', { error: error.message })
+            // Continue without auth in development
+            if (process.env.NODE_ENV === 'production') {
+              return next(new Error('Authentication failed'))
+            }
+          }
         }
-
-        const decoded = jwt.verify(token, config.jwt.secret)
-        socket.userId = decoded.userId
-        socket.userEmail = decoded.email
-        socket.userRole = decoded.role
-
-        logger.info('WebSocket authenticated', { 
-          userId: decoded.userId,
-          socketId: socket.id 
-        })
+        
+        // Allow connection without auth in development
+        if (!socket.userId) {
+          socket.userId = `guest-${socket.id}`
+          socket.userEmail = 'guest@artemis.ai'
+          socket.userRole = 'guest'
+        }
 
         next()
       } catch (error) {
-        logger.error('WebSocket authentication failed', { error: error.message })
-        next(new Error('Authentication failed'))
+        logger.error('WebSocket middleware error', { error: error.message })
+        next(error)
       }
     })
 

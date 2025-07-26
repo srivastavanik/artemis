@@ -33,6 +33,21 @@ const config = {
     apiKey: process.env.OPENAI_API_KEY
   },
   
+  // Pinecone for LlamaIndex vector DB
+  pinecone: {
+    apiKey: process.env.PINECONE_API_KEY,
+    environment: process.env.PINECONE_ENVIRONMENT || 'us-east-1',
+    indexName: process.env.PINECONE_INDEX_NAME || 'artemis-prospects'
+  },
+  
+  // Google OAuth
+  google: {
+    clientId: process.env.GOOGLE_CLIENT_ID,
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+    apiKey: process.env.GOOGLE_API_KEY,
+    redirectUri: process.env.GOOGLE_REDIRECT_URI || 'http://localhost:3001/api/auth/google/callback'
+  },
+  
   supabase: {
     url: process.env.SUPABASE_URL,
     anonKey: process.env.SUPABASE_ANON_KEY,

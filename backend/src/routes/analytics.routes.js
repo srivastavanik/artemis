@@ -4,7 +4,7 @@ import supabaseService from '../services/supabase.service.js';
 const router = express.Router();
 
 // Get dashboard analytics
-router.get('/dashboard', async (req, res) => {
+router.get('/', async (req, res) => {
   try {
     // Check if Supabase is configured
     if (!supabaseService.client) {

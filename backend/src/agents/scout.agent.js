@@ -180,8 +180,9 @@ class ScoutAgent {
   async searchByCompany(criteria) {
     try {
       // Get company information first
-      const companyInfo = await brightDataService.getCompanyInfo(
-        criteria.companyDomain || criteria.company
+      const companyDomain = criteria.companyDomain || criteria.company;
+      const companyInfo = await brightDataService.scrapeCompanyWebsite(
+        companyDomain.includes('http') ? companyDomain : `https://${companyDomain}`
       );
       
       // Find key decision makers
@@ -200,13 +201,15 @@ class ScoutAgent {
         try {
           const results = await brightDataService.searchPerson({
             company: searchParams.company,
-            title
+            jobTitle: title
           });
           
-          if (results) {
-            prospects.push({
-              ...this.transformBrightDataPerson(results),
-              companyInfo
+          if (results && results.length > 0) {
+            results.forEach(person => {
+              prospects.push({
+                ...this.transformBrightDataPerson(person),
+                companyInfo
+              });
             });
           }
         } catch (error) {
@@ -278,16 +281,16 @@ class ScoutAgent {
    */
   transformBrightDataPerson(brightDataPerson) {
     return {
-      email: brightDataPerson.identity.email,
-      firstName: brightDataPerson.identity.firstName,
-      lastName: brightDataPerson.identity.lastName,
-      jobTitle: brightDataPerson.professional.currentTitle,
-      companyName: brightDataPerson.professional.currentCompany,
-      companyDomain: brightDataPerson.companyContext?.domain,
-      linkedinUrl: brightDataPerson.social.linkedinUrl,
-      phone: brightDataPerson.identity.phone,
-      location: brightDataPerson.identity.location,
-      timezone: brightDataPerson.identity.timezone,
+      email: brightDataPerson.email,
+      firstName: brightDataPerson.firstName,
+      lastName: brightDataPerson.lastName,
+      jobTitle: brightDataPerson.jobTitle,
+      companyName: brightDataPerson.company,
+      companyDomain: brightDataPerson.companyDomain,
+      linkedinUrl: brightDataPerson.linkedinUrl,
+      phone: brightDataPerson.phone,
+      location: brightDataPerson.location,
+      timezone: brightDataPerson.location, // Convert location to timezone later
       source: 'brightdata',
       enrichmentData: brightDataPerson
     };
@@ -354,12 +357,10 @@ class ScoutAgent {
       try {
         // Only monitor high-value prospects
         if (this.isHighValueProspect(prospect)) {
-          await brightDataService.setupMonitoring(prospect.id, [
-            'job_change',
-            'company_funding',
-            'technology_adoption',
-            'competitor_mention',
-            'social_activity_spike'
+          const callbackUrl = `${process.env.API_URL || 'http://localhost:3001'}/api/webhooks/brightdata`;
+          await brightDataService.setupWebhook(callbackUrl, [
+            'profile_update',
+            'company_update'
           ]);
           
           logger.info('Monitoring setup for prospect', { 
@@ -421,9 +422,10 @@ class ScoutAgent {
     // Company enrichment
     if (prospect.company_domain) {
       try {
-        const companyData = await brightDataService.getCompanyInfo(
-          prospect.company_domain
-        );
+        const companyUrl = prospect.company_domain.includes('http') 
+          ? prospect.company_domain 
+          : `https://${prospect.company_domain}`;
+        const companyData = await brightDataService.scrapeCompanyWebsite(companyUrl);
         
         if (companyData) {
           enrichmentData.company = companyData;
@@ -433,11 +435,11 @@ class ScoutAgent {
       }
     }
     
-    // Buying signals
-    if (prospect.company_name) {
+    // Buying signals  
+    if (prospect.company_domain) {
       try {
-        const signals = await brightDataService.findBuyingSignals(
-          prospect.company_name
+        const signals = await brightDataService.getCompanySignals(
+          prospect.company_domain
         );
         
         if (signals && signals.length > 0) {
@@ -487,14 +489,14 @@ class ScoutAgent {
     if (enrichmentData.brightdata) {
       const bd = enrichmentData.brightdata;
       
-      if (!updates.phone && bd.identity.phone) {
-        updates.phone = bd.identity.phone;
+      if (!updates.phone && bd.phone) {
+        updates.phone = bd.phone;
       }
-      if (!updates.timezone && bd.identity.timezone) {
-        updates.timezone = bd.identity.timezone;
+      if (!updates.timezone && bd.timezone) {
+        updates.timezone = bd.timezone;
       }
-      if (!updates.location && bd.identity.location) {
-        updates.location = bd.identity.location;
+      if (!updates.location && bd.location) {
+        updates.location = bd.location;
       }
     }
     

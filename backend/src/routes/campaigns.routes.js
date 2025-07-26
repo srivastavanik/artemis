@@ -32,9 +32,51 @@ router.get('/', async (req, res) => {
   try {
     const { status, limit = 20, offset = 0 } = req.query;
     
+    // Check if Supabase is configured
+    if (!supabaseService.client) {
+      // Return demo data when Supabase is not configured
+      return res.json({
+        success: true,
+        data: [
+          {
+            id: '1',
+            name: 'Q1 Enterprise Outreach',
+            description: 'Target enterprise accounts with personalized campaigns',
+            channels: ['email', 'linkedin'],
+            status: 'active',
+            created_at: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+            prospects_count: 45
+          },
+          {
+            id: '2',
+            name: 'Product Launch Campaign',
+            description: 'Announce new features to existing prospects',
+            channels: ['email'],
+            status: 'draft',
+            created_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+            prospects_count: 128
+          },
+          {
+            id: '3',
+            name: 'Re-engagement Series',
+            description: 'Win back cold prospects with new value prop',
+            channels: ['email', 'linkedin'],
+            status: 'completed',
+            created_at: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString(),
+            prospects_count: 67
+          }
+        ],
+        pagination: {
+          total: 3,
+          limit,
+          offset
+        }
+      });
+    }
+    
     let query = supabaseService.client
       .from('outreach_campaigns')
-      .select('*, prospects:campaign_prospects(count)', { count: 'exact' });
+      .select('*, campaign_assignments(count)', { count: 'exact' });
     
     if (status) {
       query = query.eq('status', status);
@@ -46,9 +88,16 @@ router.get('/', async (req, res) => {
     
     if (error) throw error;
     
+    // Transform data to include prospects_count
+    const transformedCampaigns = campaigns.map(campaign => ({
+      ...campaign,
+      prospects_count: campaign.campaign_assignments?.[0]?.count || 0,
+      campaign_assignments: undefined
+    }));
+    
     res.json({
       success: true,
-      data: campaigns,
+      data: transformedCampaigns,
       pagination: {
         total: count,
         limit,
