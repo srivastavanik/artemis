@@ -338,40 +338,59 @@ class BrightDataService {
   }
 
   /**
-   * Make HTTP request to BrightData API
+   * Make HTTP request to BrightData API with retry logic
    */
-  async makeRequest(endpoint, data, method = 'POST') {
-    try {
-      const response = await axios({
-        method,
-        url: `${this.baseUrl}${endpoint}`,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.apiKey}`
-        },
-        data,
-        timeout: 30000
-      });
+  async makeRequest(endpoint, data, method = 'POST', retries = 3) {
+    let lastError;
+    
+    for (let attempt = 0; attempt < retries; attempt++) {
+      try {
+        const response = await axios({
+          method,
+          url: `${this.baseUrl}${endpoint}`,
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${this.apiKey}`
+          },
+          data,
+          timeout: 30000
+        });
 
-      return response.data;
-    } catch (error) {
-      logger.error('BrightData API error', { 
-        endpoint, 
-        error: error.message,
-        status: error.response?.status,
-        data: error.response?.data 
-      });
+        return response.data;
+      } catch (error) {
+        lastError = error;
+        logger.error('BrightData API error', { 
+          endpoint, 
+          attempt: attempt + 1,
+          error: error.message,
+          status: error.response?.status,
+          data: error.response?.data 
+        });
 
-      // Handle specific BrightData error codes
-      if (error.response?.status === 429) {
-        throw new Error('Rate limit exceeded. Please try again later.');
+        // Handle specific BrightData error codes
+        if (error.response?.status === 401) {
+          throw new Error('Invalid API key. Please check your BrightData credentials.');
+        }
+        
+        // Retry on rate limit or server errors
+        if (error.response?.status === 429 || error.response?.status >= 500) {
+          const waitTime = Math.pow(2, attempt) * 1000; // Exponential backoff: 1s, 2s, 4s
+          logger.info(`Retrying BrightData request in ${waitTime}ms...`);
+          await new Promise(resolve => setTimeout(resolve, waitTime));
+          continue;
+        }
+        
+        // Don't retry on other client errors
+        break;
       }
-      if (error.response?.status === 401) {
-        throw new Error('Invalid API key. Please check your BrightData credentials.');
-      }
-      
-      throw new Error(`BrightData API error: ${error.message}`);
     }
+    
+    // If we've exhausted retries
+    if (lastError.response?.status === 429) {
+      throw new Error('Rate limit exceeded. Please try again later.');
+    }
+    
+    throw new Error(`BrightData API error: ${lastError.message}`);
   }
 
   /**

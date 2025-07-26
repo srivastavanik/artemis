@@ -28,21 +28,20 @@ class SupabaseService {
   /**
    * Create a new prospect
    */
-  async createProspect(prospectData) {
+  async createProspect(prospectData, workspaceId) {
     try {
       if (!this.client) {
-        // Demo mode - return mock data
-        return {
-          id: Date.now().toString(),
-          ...prospectData,
-          discovered_at: new Date().toISOString(),
-          created_at: new Date().toISOString()
-        };
+        throw new Error('Supabase client not initialized. Please configure Supabase credentials.');
+      }
+
+      if (!workspaceId) {
+        throw new Error('Workspace ID is required to create prospect');
       }
 
       const { data, error } = await this.client
         .from('prospects')
         .insert({
+          workspace_id: workspaceId,
           email: prospectData.email,
           first_name: prospectData.firstName,
           last_name: prospectData.lastName,
@@ -102,19 +101,20 @@ class SupabaseService {
   /**
    * Search prospects
    */
-  async searchProspects(filters = {}) {
+  async searchProspects(filters = {}, workspaceId) {
     try {
       if (!this.client) {
-        // Demo mode - return empty result
-        return {
-          data: [],
-          total: 0,
-          limit: filters.limit || 50,
-          offset: filters.offset || 0
-        };
+        throw new Error('Supabase client not initialized. Please configure Supabase credentials.');
       }
 
-      let query = this.client.from('prospects').select('*');
+      if (!workspaceId) {
+        throw new Error('Workspace ID is required to search prospects');
+      }
+
+      let query = this.client
+        .from('prospects')
+        .select('*')
+        .eq('workspace_id', workspaceId);
 
       // Apply filters
       if (filters.email) {
@@ -164,11 +164,16 @@ class SupabaseService {
   /**
    * Store enrichment data
    */
-  async storeEnrichmentData(prospectId, source, enrichmentData) {
+  async storeEnrichmentData(prospectId, source, enrichmentData, workspaceId) {
     try {
+      if (!this.client) {
+        throw new Error('Supabase client not initialized. Please configure Supabase credentials.');
+      }
+
       const { data, error } = await this.client
         .from('enrichment_data')
         .insert({
+          workspace_id: workspaceId,
           prospect_id: prospectId,
           source,
           data: enrichmentData,
@@ -296,11 +301,16 @@ class SupabaseService {
   /**
    * Create outreach campaign
    */
-  async createCampaign(campaignData) {
+  async createCampaign(campaignData, workspaceId) {
     try {
+      if (!this.client) {
+        throw new Error('Supabase client not initialized. Please configure Supabase credentials.');
+      }
+
       const { data, error } = await this.client
         .from('outreach_campaigns')
         .insert({
+          workspace_id: workspaceId,
           name: campaignData.name,
           description: campaignData.description,
           strategy: campaignData.strategy,

@@ -55,7 +55,7 @@ const config = {
   },
   
   mastra: {
-    apiKey: process.env.OPENAI_API_KEY, // Mastra uses OpenAI for LLM
+    apiKey: process.env.MASTRA_API_KEY || process.env.OPENAI_API_KEY,
     webhookSecret: process.env.MASTRA_WEBHOOK_SECRET
   },
   
