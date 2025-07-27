@@ -1,98 +1,74 @@
--- Migration: Add missing tables for full Supabase compatibility
--- This migration adds workspace_invitations, audit_logs, prospects_quarantine, and prospects_staging tables
+-- Migration: Add missing columns and constraints (idempotent)
+-- This migration only adds what's missing without recreating existing tables
 
--- Workspace invitations table
-CREATE TABLE IF NOT EXISTS workspace_invitations (
-    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-    workspace_id UUID NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
-    email VARCHAR(255) NOT NULL,
-    role VARCHAR(50) DEFAULT 'member',
-    token VARCHAR(255) UNIQUE NOT NULL,
-    invited_by UUID REFERENCES users(id),
-    expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
-    accepted_at TIMESTAMP WITH TIME ZONE,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-);
+-- Add missing columns to existing tables if they don't exist
 
--- Audit logs table
-CREATE TABLE IF NOT EXISTS audit_logs (
-    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-    workspace_id UUID NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
-    user_id UUID REFERENCES users(id),
-    event_type VARCHAR(100) NOT NULL,
-    event_data JSONB,
-    ip_address INET,
-    user_agent TEXT,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-);
-
--- Prospects quarantine table (for prospects that need review)
-CREATE TABLE IF NOT EXISTS prospects_quarantine (
-    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-    workspace_id UUID NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
-    name VARCHAR(255) NOT NULL,
-    email VARCHAR(255),
-    company VARCHAR(255),
-    title VARCHAR(255),
-    linkedin_url VARCHAR(500),
-    phone VARCHAR(50),
-    location VARCHAR(255),
-    industry VARCHAR(100),
-    company_size VARCHAR(50),
-    website VARCHAR(500),
-    metadata JSONB DEFAULT '{}',
-    reason VARCHAR(500),
-    reviewed_by UUID REFERENCES users(id),
-    reviewed_at TIMESTAMP WITH TIME ZONE,
-    action VARCHAR(50), -- 'approved', 'rejected', 'pending'
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-);
-
--- Prospects staging table (for bulk imports)
-CREATE TABLE IF NOT EXISTS prospects_staging (
-    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-    workspace_id UUID NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
-    batch_id VARCHAR(255),
-    name VARCHAR(255),
-    email VARCHAR(255),
-    company VARCHAR(255),
-    title VARCHAR(255),
-    linkedin_url VARCHAR(500),
-    phone VARCHAR(50),
-    location VARCHAR(255),
-    industry VARCHAR(100),
-    company_size VARCHAR(50),
-    website VARCHAR(500),
-    metadata JSONB DEFAULT '{}',
-    validation_status VARCHAR(50) DEFAULT 'pending',
-    validation_errors JSONB,
-    processed BOOLEAN DEFAULT FALSE,
-    processed_at TIMESTAMP WITH TIME ZONE,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-);
-
--- Add indexes
-CREATE INDEX idx_workspace_invitations_token ON workspace_invitations(token);
-CREATE INDEX idx_workspace_invitations_email ON workspace_invitations(email);
-CREATE INDEX idx_audit_logs_workspace_event ON audit_logs(workspace_id, event_type);
-CREATE INDEX idx_audit_logs_user ON audit_logs(user_id);
-CREATE INDEX idx_prospects_quarantine_workspace ON prospects_quarantine(workspace_id);
-CREATE INDEX idx_prospects_staging_batch ON prospects_staging(batch_id);
-CREATE INDEX idx_prospects_staging_workspace ON prospects_staging(workspace_id);
-
--- Add triggers for updated_at
-CREATE OR REPLACE FUNCTION update_updated_at_column()
-RETURNS TRIGGER AS $$
+-- Add accepted_at column to workspace_invitations if missing
+DO $$ 
 BEGIN
-    NEW.updated_at = CURRENT_TIMESTAMP;
-    RETURN NEW;
-END;
-$$ language 'plpgsql';
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                  WHERE table_schema = 'public' 
+                  AND table_name = 'workspace_invitations' 
+                  AND column_name = 'accepted_at') THEN
+        ALTER TABLE workspace_invitations ADD COLUMN accepted_at TIMESTAMP WITH TIME ZONE;
+    END IF;
+END $$;
 
-CREATE TRIGGER update_workspace_invitations_updated_at BEFORE UPDATE ON workspace_invitations
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+-- Add updated_at column to workspace_invitations if missing
+DO $$ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                  WHERE table_schema = 'public' 
+                  AND table_name = 'workspace_invitations' 
+                  AND column_name = 'updated_at') THEN
+        ALTER TABLE workspace_invitations ADD COLUMN updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP;
+    END IF;
+END $$;
 
-CREATE TRIGGER update_prospects_quarantine_updated_at BEFORE UPDATE ON prospects_quarantine
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+-- Add event_type column to audit_logs if missing
+DO $$ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                  WHERE table_schema = 'public' 
+                  AND table_name = 'audit_logs' 
+                  AND column_name = 'event_type') THEN
+        ALTER TABLE audit_logs ADD COLUMN event_type VARCHAR(100);
+        -- Migrate existing data
+        UPDATE audit_logs SET event_type = action WHERE event_type IS NULL;
+    END IF;
+END $$;
+
+-- Add event_data column to audit_logs if missing
+DO $$ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                  WHERE table_schema = 'public' 
+                  AND table_name = 'audit_logs' 
+                  AND column_name = 'event_data') THEN
+        ALTER TABLE audit_logs ADD COLUMN event_data JSONB;
+        -- Migrate existing data
+        UPDATE audit_logs SET event_data = details WHERE event_data IS NULL;
+    END IF;
+END $$;
+
+-- Create indexes if they don't exist
+CREATE INDEX IF NOT EXISTS idx_workspace_invitations_token ON workspace_invitations(token);
+CREATE INDEX IF NOT EXISTS idx_workspace_invitations_email ON workspace_invitations(email);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_workspace_event ON audit_logs(workspace_id, action);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_user ON audit_logs(user_id);
+CREATE INDEX IF NOT EXISTS idx_prospects_quarantine_source ON prospects_quarantine(source);
+CREATE INDEX IF NOT EXISTS idx_prospects_staging_status ON prospects_staging(status);
+CREATE INDEX IF NOT EXISTS idx_prospects_staging_source ON prospects_staging(source);
+
+-- Add update triggers for updated_at columns if they don't exist
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'update_workspace_invitations_updated_at') THEN
+        CREATE TRIGGER update_workspace_invitations_updated_at 
+        BEFORE UPDATE ON workspace_invitations
+        FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+    END IF;
+END $$;
+
+-- Note: The prospects_quarantine and prospects_staging tables exist but with different structures
+-- than originally planned. They are functional as-is, so we're not modifying them.

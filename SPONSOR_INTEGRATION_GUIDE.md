@@ -17,18 +17,18 @@ Ensure all environment variables in `.env` are properly configured with valid AP
 
 ## 1. Database Schema Updates
 
-Run the new migration to add missing tables:
+Run the new migration to add missing columns and indexes:
 
 ```bash
 # Connect to your Supabase database and run:
 psql $DATABASE_URL < database/migrations/005_add_missing_tables.sql
 ```
 
-This adds:
-- workspace_invitations
-- audit_logs  
-- prospects_quarantine
-- prospects_staging
+This migration is idempotent and will:
+- Add missing columns to existing tables
+- Create indexes if they don't exist
+- Add update triggers for updated_at columns
+- Skip any operations that would conflict with existing structures
 
 ## 2. BrightData Integration
 
