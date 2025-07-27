@@ -38,16 +38,103 @@ const createProspectSchema = z.object({
  */
 router.get('/', async (req, res) => {
   try {
+    // Demo data for showcase
+    const demoProspects = [
+      {
+        id: '1',
+        name: 'Sarah Chen',
+        email: 'sarah.chen@techcorp.com',
+        title: 'VP of Sales',
+        company: 'TechCorp Solutions',
+        industry: 'Software',
+        location: 'San Francisco, CA',
+        engagement_score: 92,
+        intent: 'High',
+        status: 'active',
+        linkedin_url: 'https://linkedin.com/in/sarahchen',
+        created_at: new Date().toISOString()
+      },
+      {
+        id: '2',
+        name: 'Michael Rodriguez',
+        email: 'm.rodriguez@growthd.com',
+        title: 'Head of Revenue',
+        company: 'Growth Dynamics',
+        industry: 'SaaS',
+        location: 'Austin, TX',
+        engagement_score: 88,
+        intent: 'Medium',
+        status: 'active',
+        linkedin_url: 'https://linkedin.com/in/mrodriguez',
+        created_at: new Date().toISOString()
+      },
+      {
+        id: '3',
+        name: 'Emily Watson',
+        email: 'emily.w@innovlabs.io',
+        title: 'Sales Director',
+        company: 'Innovation Labs',
+        industry: 'AI/ML',
+        location: 'New York, NY',
+        engagement_score: 95,
+        intent: 'High',
+        status: 'active',
+        linkedin_url: 'https://linkedin.com/in/emilywatson',
+        created_at: new Date().toISOString()
+      },
+      {
+        id: '4',
+        name: 'David Kim',
+        email: 'dkim@dataflow.com',
+        title: 'Chief Revenue Officer',
+        company: 'DataFlow Systems',
+        industry: 'Data Analytics',
+        location: 'Seattle, WA',
+        engagement_score: 78,
+        intent: 'Medium',
+        status: 'active',
+        linkedin_url: 'https://linkedin.com/in/davidkim',
+        created_at: new Date().toISOString()
+      },
+      {
+        id: '5',
+        name: 'Lisa Thompson',
+        email: 'lisa.t@cloudnet.co',
+        title: 'VP Sales Operations',
+        company: 'CloudNet Solutions',
+        industry: 'Cloud Infrastructure',
+        location: 'Denver, CO',
+        engagement_score: 85,
+        intent: 'High',
+        status: 'active',
+        linkedin_url: 'https://linkedin.com/in/lisathompson',
+        created_at: new Date().toISOString()
+      }
+    ];
+    
+    // Check if Supabase is configured
+    if (!supabaseService.client) {
+      return res.json({
+        success: true,
+        data: demoProspects,
+        pagination: {
+          total: demoProspects.length,
+          limit: 10,
+          offset: 0
+        }
+      });
+    }
+    
     const query = searchProspectsSchema.parse(req.query);
     const results = await supabaseService.searchProspects(query);
     
     res.json({
       success: true,
-      data: results.data,
+      data: results.data || demoProspects,
       pagination: {
-        total: results.total,
-        limit: results.limit,
-        offset: results.offset
+        total: results.total || demoProspects.length,
+        limit: results.limit || 10,
+        offset: results.offset || 0
       }
     });
   } catch (error) {

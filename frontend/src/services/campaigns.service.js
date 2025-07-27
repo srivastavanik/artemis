@@ -44,6 +44,11 @@ class CampaignsService {
   async assignProspectsToCampaign(id, prospectIds) {
     return api.post(`/campaigns/${id}/prospects`, { prospectIds });
   }
+
+  // Alias for Campaigns page
+  async getAllCampaigns() {
+    return this.getCampaigns();
+  }
 }
 
 export default new CampaignsService();

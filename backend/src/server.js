@@ -28,6 +28,9 @@ const __dirname = dirname(__filename);
 // Initialize Express app
 const app = express();
 
+// Trust proxy for Render deployment
+app.set('trust proxy', true);
+
 // Create HTTP server
 const server = createServer(app);
 

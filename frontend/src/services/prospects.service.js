@@ -41,6 +41,11 @@ class ProspectsService {
   async getEngagementScore(prospectId) {
     return api.get(`/prospects/${prospectId}/score`);
   }
+
+  // Alias for Prospects page
+  async getAllProspects(filters = {}) {
+    return this.getProspects(filters);
+  }
 }
 
 export default new ProspectsService();

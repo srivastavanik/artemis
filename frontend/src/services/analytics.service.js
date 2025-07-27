@@ -28,6 +28,11 @@ class AnalyticsService {
   async getRealtimeStats() {
     return api.get('/analytics/realtime');
   }
+
+  // Alias for Analytics page
+  async getPerformanceMetrics() {
+    return this.getDashboardMetrics();
+  }
 }
 
 export default new AnalyticsService();

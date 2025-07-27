@@ -45,7 +45,10 @@ router.get('/', async (req, res) => {
             channels: ['email', 'linkedin'],
             status: 'active',
             created_at: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-            prospects_count: 45
+            prospects_count: 45,
+            messages_sent: 234,
+            open_rate: 68,
+            reply_rate: 22
           },
           {
             id: '2',
@@ -54,7 +57,10 @@ router.get('/', async (req, res) => {
             channels: ['email'],
             status: 'draft',
             created_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-            prospects_count: 128
+            prospects_count: 128,
+            messages_sent: 0,
+            open_rate: 0,
+            reply_rate: 0
           },
           {
             id: '3',
@@ -63,11 +69,26 @@ router.get('/', async (req, res) => {
             channels: ['email', 'linkedin'],
             status: 'completed',
             created_at: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString(),
-            prospects_count: 67
+            prospects_count: 67,
+            messages_sent: 189,
+            open_rate: 45,
+            reply_rate: 18
+          },
+          {
+            id: '4',
+            name: 'Summer Special Promotion',
+            description: 'Limited time offer for qualified leads',
+            channels: ['email'],
+            status: 'active',
+            created_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+            prospects_count: 89,
+            messages_sent: 156,
+            open_rate: 72,
+            reply_rate: 35
           }
         ],
         pagination: {
-          total: 3,
+          total: 4,
           limit,
           offset
         }
