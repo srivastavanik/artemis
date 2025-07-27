@@ -6,11 +6,11 @@
   "type": "module",
   "scripts": {
     "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
-    "dev:backend": "nodemon backend/src/index.js",
+    "dev:backend": "nodemon backend/src/server.js",
     "dev:frontend": "cd frontend && vite",
     "build": "npm run build:frontend",
     "build:frontend": "cd frontend && vite build",
-    "start": "node backend/src/index.js",
+    "start": "node backend/src/server.js",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",

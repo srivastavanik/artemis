@@ -317,29 +317,24 @@ class ScoutAgent {
     
     for (const prospect of prospects) {
       try {
-        // Check if prospect already exists
-        const existing = await supabaseService.searchProspects({
-          email: prospect.email
+        // Write to staging table for pipeline processing
+        const stagingRecord = await supabaseService.createStagingRecord(
+          prospect,
+          'ai_discovery'
+        );
+        
+        logger.info('Prospect added to staging', {
+          stagingId: stagingRecord.id,
+          email: prospect.email,
+          source: 'ai_discovery'
         });
         
-        if (existing.data.length === 0) {
-          const savedProspect = await supabaseService.createProspect(prospect);
-          
-          // Store initial enrichment data
-          if (prospect.enrichmentData) {
-            await supabaseService.storeEnrichmentData(
-              savedProspect.id,
-              'brightdata',
-              prospect.enrichmentData
-            );
-          }
-          
-          saved.push(savedProspect);
-        } else {
-          logger.info('Prospect already exists', { email: prospect.email });
-        }
+        saved.push({
+          stagingId: stagingRecord.id,
+          ...prospect
+        });
       } catch (error) {
-        logger.error('Failed to save prospect', { 
+        logger.error('Failed to save prospect to staging', { 
           prospect, 
           error: error.message 
         });

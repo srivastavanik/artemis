@@ -104,11 +104,22 @@ router.get('/:id', async (req, res) => {
 router.post('/', async (req, res) => {
   try {
     const prospectData = createProspectSchema.parse(req.body);
-    const prospect = await supabaseService.createProspect(prospectData);
+    
+    // Write to staging table instead of directly to prospects
+    const stagingRecord = await supabaseService.createStagingRecord(
+      prospectData,
+      'manual_creation'
+    );
+    
+    logger.info('Prospect added to staging', { 
+      stagingId: stagingRecord.id,
+      source: 'manual_creation' 
+    });
     
     res.status(201).json({
       success: true,
-      data: prospect
+      message: 'Prospect queued for processing',
+      stagingId: stagingRecord.id
     });
   } catch (error) {
     logger.error('Prospect creation failed', { error: error.message });

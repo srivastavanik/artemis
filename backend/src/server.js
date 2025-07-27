@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import cron from 'node-cron';
 import { createServer } from 'http';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
@@ -12,8 +13,11 @@ import analyticsRoutes from './routes/analytics.routes.js';
 import webhookRoutes from './routes/webhooks.routes.js';
 import testRoutes from './routes/test.routes.js';
 import authRoutes from './routes/auth.routes.js';
+import pipelineRoutes from './routes/pipeline.routes.js';
 import executorAgent from './agents/executor.agent.js';
 import websocketService from './services/websocket.service.js';
+import pipelineWorker from './services/pipeline.worker.js';
+import enrichmentWorker from './services/enrichment.worker.js';
 import { authenticate, optionalAuth } from './middleware/auth.middleware.js';
 import rateLimit from './middleware/rateLimit.middleware.js';
 
@@ -104,6 +108,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/prospects', optionalAuth, rateLimit.enrichment, prospectRoutes);
 app.use('/api/campaigns', optionalAuth, rateLimit.campaigns, campaignRoutes);
 app.use('/api/analytics', optionalAuth, rateLimit.analytics, analyticsRoutes);
+app.use('/api/pipeline', optionalAuth, rateLimit.general, pipelineRoutes);
 
 // Webhook routes (no auth required for external webhooks)
 app.use('/api/webhooks', webhookRoutes);
@@ -175,7 +180,12 @@ server.listen(PORT, () => {
       'GET /api/analytics/funnel',
       'GET /api/analytics/content',
       'GET /api/analytics/scores',
-      'GET /api/analytics/roi'
+      'GET /api/analytics/roi',
+      'GET /api/pipeline/stats',
+      'POST /api/pipeline/process',
+      'POST /api/pipeline/enrich',
+      'POST /api/pipeline/quarantine/review',
+      'GET /api/pipeline/health'
     ]
   });
   
@@ -183,6 +193,91 @@ server.listen(PORT, () => {
   logger.info('WebSocket server ready', {
     transport: 'ws://',
     port: PORT
+  });
+  
+  // Schedule automated jobs
+  
+  // Pipeline processing - run every minute
+  cron.schedule('* * * * *', async () => {
+    try {
+      logger.debug('Running scheduled pipeline processing');
+      const results = await pipelineWorker.processStagingTable();
+      
+      if (results && results.processed > 0) {
+        logger.info('Scheduled pipeline processing completed', results);
+      }
+    } catch (error) {
+      logger.error('Scheduled pipeline processing failed', {
+        error: error.message
+      });
+    }
+  });
+  
+  // Enrichment - run every 30 minutes
+  cron.schedule('*/30 * * * *', async () => {
+    try {
+      logger.info('Running scheduled enrichment');
+      const results = await enrichmentWorker.runScheduledEnrichment();
+      
+      if (results && results.total > 0) {
+        logger.info('Scheduled enrichment completed', results);
+      }
+    } catch (error) {
+      logger.error('Scheduled enrichment failed', {
+        error: error.message
+      });
+    }
+  });
+  
+  // Quarantine review - run every hour
+  cron.schedule('0 * * * *', async () => {
+    try {
+      logger.debug('Running quarantine review processing');
+      const results = await pipelineWorker.processQuarantinedRecords();
+      
+      if (results && results.length > 0) {
+        logger.info('Quarantine review completed', {
+          processed: results.length
+        });
+      }
+    } catch (error) {
+      logger.error('Quarantine review failed', {
+        error: error.message
+      });
+    }
+  });
+  
+  // Pipeline health check - run every 5 minutes
+  cron.schedule('*/5 * * * *', async () => {
+    try {
+      const pipelineStats = await pipelineWorker.getPipelineStats();
+      const enrichmentStats = await enrichmentWorker.getEnrichmentStats();
+      
+      logger.info('Pipeline health check', {
+        pipeline: pipelineStats,
+        enrichment: enrichmentStats
+      });
+      
+      // Emit stats via WebSocket for monitoring
+      websocketService.broadcast('pipeline:stats', {
+        timestamp: new Date().toISOString(),
+        pipeline: pipelineStats,
+        enrichment: enrichmentStats
+      });
+    } catch (error) {
+      logger.error('Pipeline health check failed', {
+        error: error.message
+      });
+    }
+  });
+  
+  logger.info('Scheduled jobs initialized', {
+    jobs: [
+      'Pipeline processing (every minute)',
+      'Enrichment (every 30 minutes)',
+      'Quarantine review (every hour)',
+      'Health monitoring (every 5 minutes)'
+    ]
   });
 });
 
