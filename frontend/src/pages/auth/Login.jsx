@@ -15,10 +15,10 @@ const Login = () => {
     try {
       setError('');
       setLoading(true);
-      await signIn(email, password);
+      await signIn({ email, password });
       navigate('/dashboard');
     } catch (error) {
-      setError(error.message);
+      setError(error.message || 'Failed to sign in');
     } finally {
       setLoading(false);
     }

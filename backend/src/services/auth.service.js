@@ -23,6 +23,17 @@ class AuthService {
    */
   async signUp({ email, password, fullName }) {
     try {
+      // Check if user already exists
+      const { data: existingAuth } = await this.supabase
+        .from('users')
+        .select('id')
+        .eq('email', email)
+        .single();
+
+      if (existingAuth) {
+        throw new Error('A user with this email address has already been registered');
+      }
+
       // Create auth user
       const { data: authData, error: authError } = await this.supabase.auth.admin.createUser({
         email,
@@ -31,7 +42,13 @@ class AuthService {
         user_metadata: { full_name: fullName }
       });
 
-      if (authError) throw authError;
+      if (authError) {
+        // Handle specific auth errors
+        if (authError.message?.includes('already registered')) {
+          throw new Error('A user with this email address has already been registered');
+        }
+        throw authError;
+      }
 
       // Create user profile
       const { data: userProfile, error: profileError } = await this.supabase
@@ -41,12 +58,20 @@ class AuthService {
           email: authData.user.email,
           name: fullName,
           full_name: fullName,
-          avatar_url: this.generateGravatar(email)
+          avatar_url: this.generateGravatar(email),
+          role: 'user', // Set default role
+          is_active: true,
+          created_at: new Date().toISOString()
         })
         .select()
         .single();
 
-      if (profileError) throw profileError;
+      if (profileError) {
+        // If profile creation fails, clean up auth user
+        await this.supabase.auth.admin.deleteUser(authData.user.id);
+        logger.error('Profile creation failed, cleaned up auth user', { error: profileError });
+        throw new Error('Failed to create user profile');
+      }
 
       // Generate JWT token
       const token = generateToken(userProfile);

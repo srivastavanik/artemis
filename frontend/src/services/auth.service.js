@@ -47,7 +47,7 @@ class AuthService {
       throw new Error(response.data.error || 'Sign in failed');
     } catch (error) {
       console.error('Sign in error:', error);
-      throw error.response?.data?.error || error.message;
+      throw new Error(error.response?.data?.error || error.message || 'Sign in failed');
     }
   }
 
