@@ -16,6 +16,7 @@ import executorAgent from './agents/executor.agent.js';
 import websocketService from './services/websocket.service.js';
 import { authenticate, optionalAuth } from './middleware/auth.middleware.js';
 import rateLimit from './middleware/rateLimit.middleware.js';
+import llamaIndexService from './services/llamaindex.service.js';
 
 // Load environment variables
 dotenv.config();
@@ -160,15 +161,34 @@ app.use((req, res) => {
   });
 });
 
+// Initialize Pinecone on startup (if configured)
+const initializePinecone = async () => {
+  if (config.pinecone.apiKey && config.pinecone.environment) {
+    try {
+      logger.info('Initializing Pinecone index...');
+      await llamaIndexService.initializeIndex();
+      logger.info('✅ Pinecone index initialized successfully');
+    } catch (error) {
+      logger.error('❌ Failed to initialize Pinecone:', error);
+      // Don't fail startup, just log the error
+    }
+  } else {
+    logger.warn('Pinecone not configured - skipping initialization');
+  }
+};
+
 // Start server
 const PORT = process.env.PORT || config.port;
 
-server.listen(PORT, () => {
+server.listen(PORT, async () => {
   logger.info(`Server running on port ${PORT}`, {
     environment: process.env.NODE_ENV,
     nodeVersion: process.version,
     websocket: 'enabled'
   });
+  
+  // Initialize Pinecone after server starts
+  await initializePinecone();
   
   // Log available routes
   logger.info('Available routes:', {
