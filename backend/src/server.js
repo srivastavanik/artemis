@@ -194,14 +194,31 @@ server.listen(PORT, async () => {
   logger.info('Available routes:', {
     routes: [
       'GET /health',
+      // Auth routes
+      'POST /api/auth/signup',
+      'POST /api/auth/signin',
+      'GET /api/auth/google',
+      'GET /api/auth/callback',
+      'POST /api/auth/magic-link',
+      'POST /api/auth/verify-magic-link',
+      'POST /api/auth/signout',
+      'GET /api/auth/me',
+      'POST /api/auth/workspace',
+      'POST /api/auth/invite',
+      'POST /api/auth/accept-invite',
+      'GET /api/auth/session',
+      'PATCH /api/auth/profile',
+      // Prospect routes
       'GET /api/prospects',
       'POST /api/prospects',
       'POST /api/prospects/discover',
       'POST /api/prospects/:id/enrich',
       'POST /api/prospects/:id/analyze',
+      // Campaign routes
       'GET /api/campaigns',
       'POST /api/campaigns',
       'POST /api/campaigns/execute',
+      // Analytics routes
       'GET /api/analytics',
       'GET /api/analytics/agents',
       'GET /api/analytics/funnel',
