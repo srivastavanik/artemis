@@ -1,39 +1,40 @@
 # ARTEMIS - Arcade & Pinecone Setup Guide
 
-## 1. Arcade Setup
+## 1. Arcade Setup (Starter Plan) ✅
 
-### You DON'T Need a Worker
-Based on your screenshots, you don't need to create a worker. Workers are for advanced Arcade features. ARTEMIS uses Arcade's API directly for email sending.
+Since you have the **Arcade Starter Plan**, setup is much simpler:
 
-### Gmail OAuth Configuration
+### API Key Configuration
 
-1. **In Arcade Dashboard:**
-   - Go to OAuth Providers
-   - Click on "arcade-google" 
-   - Click "Manage"
-   - You'll need your Google OAuth credentials (see below)
+1. **Get your API Key:**
+   - Log into your Arcade dashboard
+   - Go to Settings > API Keys
+   - Copy your API key
 
-2. **In Google Cloud Console:**
-   - Go to https://console.cloud.google.com
-   - Create new project or select existing
-   - Enable Gmail API:
-     - Go to "APIs & Services" > "Library"
-     - Search for "Gmail API"
-     - Click Enable
-   - Create OAuth 2.0 Credentials:
-     - Go to "APIs & Services" > "Credentials"
-     - Click "Create Credentials" > "OAuth client ID"
-     - Application type: Web application
-     - Name: "ARTEMIS Gmail Integration"
-     - Authorized redirect URIs: 
-       - Add: `https://api.arcade.software/oauth/google/callback`
-       - Add: `http://localhost:5173/auth/google/callback` (for local testing)
-     - Copy the Client ID and Client Secret
+2. **Add to your `.env` file:**
+   ```env
+   ARCADE_API_KEY=your_arcade_api_key_here
+   ```
 
-3. **Configure in Arcade:**
-   - Enter your Google Client ID
-   - Enter your Google Client Secret
-   - Save the configuration
+3. **That's it!** With the Starter plan, you can:
+   - Send emails directly via API
+   - Track opens, clicks, and replies
+   - Send LinkedIn messages (if configured)
+   - Schedule calendar invites
+   - Use webhooks for real-time updates
+
+### Test Your Connection
+
+Run this command to verify Arcade is connected:
+```bash
+cd backend
+node -e "
+import arcadeService from './src/services/arcade.service.js';
+arcadeService.testConnection()
+  .then(result => console.log('✅ Arcade:', result))
+  .catch(err => console.error('❌ Arcade error:', err));
+"
+```
 
 ## 2. Pinecone Setup
 

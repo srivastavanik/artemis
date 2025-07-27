@@ -1,59 +1,44 @@
 import axios from 'axios';
-import nodemailer from 'nodemailer';
-import { google } from 'googleapis';
 import config from '../../config/index.js';
 import { logger } from '../utils/logger.js';
 
 class ArcadeService {
   constructor() {
     this.apiKey = config.arcade.apiKey;
-    this.baseUrl = config.arcade.baseUrl;
+    this.baseUrl = config.arcade.baseUrl || 'https://api.arcade.software/v1';
     this.campaignStates = new Map();
     this.webhookHandlers = new Map();
     
-    // Initialize email transporter (using Gmail with OAuth2)
-    this.emailTransporter = null;
-    this.oauth2Client = new google.auth.OAuth2(
-      config.google.clientId,
-      config.google.clientSecret,
-      config.google.redirectUri
-    );
-    
     // Initialize webhook handlers
     this.registerWebhookHandlers();
+    
+    // Validate API key
+    if (!this.apiKey) {
+      logger.warn('Arcade API key not configured');
+    }
   }
 
   /**
-   * Initialize Gmail transporter with OAuth2
+   * Test Arcade API connection
    */
-  async initializeEmailTransporter(refreshToken) {
+  async testConnection() {
     try {
-      this.oauth2Client.setCredentials({
-        refresh_token: refreshToken
+      const response = await this.makeRequest('/account/info', null, 'GET');
+      logger.info('Arcade API connected successfully', {
+        account: response.account,
+        plan: response.plan
       });
-
-      const { token } = await this.oauth2Client.getAccessToken();
-      
-      this.emailTransporter = nodemailer.createTransport({
-        service: 'gmail',
-        auth: {
-          type: 'OAuth2',
-          user: 'sales@company.com', // This should be from user's OAuth
-          clientId: config.google.clientId,
-          clientSecret: config.google.clientSecret,
-          refreshToken: refreshToken,
-          accessToken: token
-        }
-      });
-      
-      // Verify connection
-      await this.emailTransporter.verify();
-      logger.info('Email transporter initialized successfully');
-      
-      return true;
+      return {
+        connected: true,
+        account: response.account,
+        plan: response.plan
+      };
     } catch (error) {
-      logger.error('Email transporter initialization failed', { error: error.message });
-      throw error;
+      logger.error('Arcade API connection test failed', { error: error.message });
+      return {
+        connected: false,
+        error: error.message
+      };
     }
   }
 
@@ -123,57 +108,57 @@ class ArcadeService {
   }
 
   /**
-   * Send personalized email using nodemailer
+   * Send personalized email using Arcade API
    */
   async sendEmail(prospect, message, options = {}) {
     try {
-      if (!this.emailTransporter) {
-        throw new Error('Email transporter not initialized. Please authenticate with Google first.');
-      }
-
       const personalizedMessage = {
         subject: this.personalizeContent(message.subject, prospect),
-        html: this.formatEmailHtml(
-          this.personalizeContent(message.content, prospect),
-          prospect,
-          message
-        ),
-        text: this.personalizeContent(message.content, prospect)
+        body: this.personalizeContent(message.content, prospect)
       };
 
-      const mailOptions = {
-        from: options.from || '"Artemis Sales" <sales@company.com>',
+      // Prepare email data for Arcade API
+      const emailData = {
         to: prospect.email,
+        from: options.from || 'sales@artemis.ai',
+        replyTo: options.replyTo || 'sales@artemis.ai',
         subject: personalizedMessage.subject,
-        html: personalizedMessage.html,
-        text: personalizedMessage.text,
-        replyTo: options.replyTo || 'sales@company.com',
-        headers: {
-          'X-Campaign-ID': message.campaignId,
-          'X-Prospect-ID': prospect.id,
-          'X-Message-ID': message.id
+        body: personalizedMessage.body,
+        html: this.formatEmailHtml(personalizedMessage.body, prospect, message),
+        prospectId: prospect.id,
+        messageId: message.id,
+        campaignId: message.campaignId,
+        trackOpens: options.trackOpens !== false,
+        trackClicks: options.trackClicks !== false,
+        metadata: {
+          firstName: prospect.firstName,
+          lastName: prospect.lastName,
+          company: prospect.companyName,
+          jobTitle: prospect.jobTitle
         }
       };
 
-      // Add tracking pixel
-      if (options.trackOpens !== false) {
-        mailOptions.html += this.getTrackingPixel(prospect.id, message.id);
+      // Schedule if specified
+      if (options.scheduledFor) {
+        emailData.scheduledFor = options.scheduledFor;
       }
 
       // Add calendar invite if specified
       if (options.includeCalendarInvite) {
-        mailOptions.icalEvent = this.createCalendarInvite(prospect, options.meetingDetails);
+        emailData.calendarInvite = {
+          enabled: true,
+          meetingDetails: options.meetingDetails
+        };
       }
 
-      const result = await this.emailTransporter.sendMail(mailOptions);
-
-      // Log to Arcade for tracking
-      await this.logEmailSent(prospect.id, message.id, result.messageId);
+      // Send via Arcade API
+      const response = await this.makeRequest('/emails/send', emailData);
 
       return {
-        messageId: result.messageId,
-        status: 'sent',
-        scheduledFor: options.scheduledFor || new Date()
+        messageId: response.id,
+        status: response.status,
+        scheduledFor: response.scheduledFor || new Date(),
+        trackingId: response.trackingId
       };
     } catch (error) {
       logger.error('Email send failed', { error: error.message });
@@ -245,60 +230,42 @@ class ArcadeService {
   }
 
   /**
-   * Schedule calendar invite using Google Calendar API
+   * Schedule calendar invite using Arcade API
    */
   async scheduleCalendarInvite(prospect, meetingDetails) {
     try {
-      const calendar = google.calendar({ version: 'v3', auth: this.oauth2Client });
-      
-      const event = {
-        summary: this.personalizeContent(meetingDetails.title, prospect),
+      const calendarData = {
+        title: this.personalizeContent(meetingDetails.title, prospect),
         description: this.personalizeContent(meetingDetails.description, prospect),
-        start: {
-          dateTime: meetingDetails.startTime,
-          timeZone: prospect.timezone || 'America/New_York'
+        startTime: meetingDetails.startTime,
+        endTime: meetingDetails.endTime,
+        timezone: prospect.timezone || 'America/New_York',
+        attendee: {
+          email: prospect.email,
+          name: `${prospect.firstName} ${prospect.lastName}`
         },
-        end: {
-          dateTime: meetingDetails.endTime,
-          timeZone: prospect.timezone || 'America/New_York'
-        },
-        attendees: [
-          {
-            email: prospect.email,
-            displayName: `${prospect.firstName} ${prospect.lastName}`,
-            responseStatus: 'needsAction'
-          }
+        location: meetingDetails.location || 'Virtual Meeting',
+        includeConferenceLink: true,
+        reminders: [
+          { type: 'email', minutes: 24 * 60 }, // 1 day before
+          { type: 'email', minutes: 15 }
         ],
-        reminders: {
-          useDefault: false,
-          overrides: [
-            { method: 'email', minutes: 24 * 60 }, // 1 day before
-            { method: 'popup', minutes: 15 }
-          ]
-        },
-        conferenceData: {
-          createRequest: {
-            requestId: `artemis-${Date.now()}`,
-            conferenceSolutionKey: { type: 'hangoutsMeet' }
-          }
+        prospectId: prospect.id,
+        metadata: {
+          company: prospect.companyName,
+          jobTitle: prospect.jobTitle
         }
       };
 
-      const response = await calendar.events.insert({
-        calendarId: 'primary',
-        resource: event,
-        conferenceDataVersion: 1,
-        sendUpdates: 'all'
-      });
-
-      // Log to Arcade
-      await this.logCalendarInvite(prospect.id, response.data.id, response.data.hangoutLink);
+      // Send calendar invite via Arcade API
+      const response = await this.makeRequest('/calendar/invite', calendarData);
 
       return {
-        inviteId: response.data.id,
+        inviteId: response.id,
         status: 'scheduled',
-        meetingLink: response.data.hangoutLink,
-        htmlLink: response.data.htmlLink
+        meetingLink: response.conferenceLink,
+        htmlLink: response.inviteLink,
+        trackingId: response.trackingId
       };
     } catch (error) {
       logger.error('Calendar invite creation failed', { error: error.message });
