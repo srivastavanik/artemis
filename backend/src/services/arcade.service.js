@@ -120,8 +120,8 @@ class ArcadeService {
       // Prepare email data for Arcade API
       const emailData = {
         to: prospect.email,
-        from: options.from || 'sales@artemis.ai',
-        replyTo: options.replyTo || 'sales@artemis.ai',
+        from: options.from || 'nicksrivwork@gmail.com',
+        replyTo: options.replyTo || 'nicksrivwork@gmail.com',
         subject: personalizedMessage.subject,
         body: personalizedMessage.body,
         html: this.formatEmailHtml(personalizedMessage.body, prospect, message),

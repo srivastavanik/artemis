@@ -113,10 +113,10 @@ app.get('/health', (req, res) => {
 // Auth routes (no auth middleware on auth routes themselves)
 app.use('/api/auth', authRoutes);
 
-// API Routes with rate limiting
-app.use('/api/prospects', optionalAuth, rateLimit.enrichment, prospectRoutes);
-app.use('/api/campaigns', optionalAuth, rateLimit.campaigns, campaignRoutes);
-app.use('/api/analytics', optionalAuth, rateLimit.analytics, analyticsRoutes);
+// API Routes with rate limiting (no auth for demo)
+app.use('/api/prospects', rateLimit.enrichment, prospectRoutes);
+app.use('/api/campaigns', rateLimit.campaigns, campaignRoutes);
+app.use('/api/analytics', rateLimit.analytics, analyticsRoutes);
 
 // Webhook routes (no auth required for external webhooks)
 app.use('/api/webhooks', webhookRoutes);

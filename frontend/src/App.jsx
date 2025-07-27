@@ -1,7 +1,5 @@
 import React from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
-import { AuthProvider } from './contexts/AuthContext'
-import ProtectedRoute from './components/ProtectedRoute'
 import Layout from './components/Layout'
 import Home from './pages/Home'
 import Dashboard from './pages/Dashboard'
@@ -10,55 +8,33 @@ import Campaigns from './pages/Campaigns'
 import Analytics from './pages/Analytics'
 import Settings from './pages/Settings'
 import LiveDemo from './pages/LiveDemo'
-import ConnectionTest from './components/ConnectionTest'
-
-// Auth pages
-import Login from './pages/auth/Login'
-import Signup from './pages/auth/Signup'
-import Onboarding from './pages/auth/Onboarding'
-import AuthCallback from './pages/auth/AuthCallback'
 
 function App() {
-  const isDevelopment = import.meta.env.VITE_ENV === 'development' || import.meta.env.DEV;
-  
   return (
-    <AuthProvider>
-      <Routes>
-        {/* Public Routes */}
-        <Route path="/" element={<Home />} />
-        
-        {/* Auth Routes */}
-        <Route path="/login" element={<Login />} />
-        <Route path="/signup" element={<Signup />} />
-        <Route path="/auth/callback" element={<AuthCallback />} />
-        
-        {/* Onboarding Route */}
-        <Route path="/onboarding" element={
-          <ProtectedRoute requireWorkspace={false}>
-            <Onboarding />
-          </ProtectedRoute>
-        } />
-        
-        {/* Protected App Routes */}
-        <Route path="/app" element={
-          <ProtectedRoute>
-            <Layout />
-          </ProtectedRoute>
-        }>
-          <Route index element={<Dashboard />} />
-          <Route path="prospects" element={<Prospects />} />
-          <Route path="campaigns" element={<Campaigns />} />
-          <Route path="analytics" element={<Analytics />} />
-          <Route path="settings" element={<Settings />} />
-          <Route path="demo" element={<LiveDemo />} />
-        </Route>
-        
-        {/* Redirect any unknown routes to home */}
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+    <Routes>
+      {/* Public Home Page */}
+      <Route path="/" element={<Home />} />
       
-      {isDevelopment && <ConnectionTest />}
-    </AuthProvider>
+      {/* All App Routes - No Auth Required */}
+      <Route path="/app" element={<Layout />}>
+        <Route index element={<Dashboard />} />
+        <Route path="prospects" element={<Prospects />} />
+        <Route path="campaigns" element={<Campaigns />} />
+        <Route path="analytics" element={<Analytics />} />
+        <Route path="settings" element={<Settings />} />
+        <Route path="demo" element={<LiveDemo />} />
+      </Route>
+      
+      {/* Direct access routes */}
+      <Route path="/dashboard" element={<Navigate to="/app" replace />} />
+      <Route path="/prospects" element={<Navigate to="/app/prospects" replace />} />
+      <Route path="/campaigns" element={<Navigate to="/app/campaigns" replace />} />
+      <Route path="/analytics" element={<Navigate to="/app/analytics" replace />} />
+      <Route path="/demo" element={<Navigate to="/app/demo" replace />} />
+      
+      {/* Redirect any unknown routes to dashboard */}
+      <Route path="*" element={<Navigate to="/app" replace />} />
+    </Routes>
   )
 }
 

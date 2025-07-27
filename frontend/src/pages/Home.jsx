@@ -14,11 +14,11 @@ const Home = () => {
             <a href="#pricing" className="hover:text-indigo-300 transition-colors">Pricing</a>
           </div>
           <div className="flex items-center space-x-4">
-            <Link to="/login" className="text-sm hover:text-indigo-300 transition-colors">
-              Log In
+            <Link to="/app" className="text-sm hover:text-indigo-300 transition-colors">
+              Enter Demo
             </Link>
-            <Link to="/signup" className="text-sm border border-indigo-500/30 rounded-md px-4 py-2 hover:bg-indigo-500/10 transition-all">
-              Get Started
+            <Link to="/app" className="text-sm border border-indigo-500/30 rounded-md px-4 py-2 hover:bg-indigo-500/10 transition-all">
+              Launch App
             </Link>
           </div>
         </div>
@@ -37,10 +37,10 @@ const Home = () => {
             Transform your sales process with intelligent prospect discovery, AI-driven insights, and automated multi-channel outreach.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link to="/signup" className="bg-white text-black font-light rounded-md px-6 py-3 hover:bg-opacity-90 transition-all">
-              Get Started
+            <Link to="/app" className="bg-white text-black font-light rounded-md px-6 py-3 hover:bg-opacity-90 transition-all">
+              Launch App
             </Link>
-            <Link to="/demo" className="bg-transparent border border-indigo-500/30 rounded-md px-6 py-3 hover:bg-indigo-500/10 transition-all">
+            <Link to="/app/demo" className="bg-transparent border border-indigo-500/30 rounded-md px-6 py-3 hover:bg-indigo-500/10 transition-all">
               View Demo
             </Link>
           </div>
@@ -142,8 +142,8 @@ const Home = () => {
           <p className="text-gray-400 font-extralight text-lg mb-8 max-w-2xl mx-auto">
             Join leading companies using ARTEMIS to scale their revenue
           </p>
-          <Link to="/signup" className="bg-white text-black font-light rounded-md px-8 py-4 hover:bg-opacity-90 transition-all inline-block">
-            Get Started Free
+          <Link to="/app" className="bg-white text-black font-light rounded-md px-8 py-4 hover:bg-opacity-90 transition-all inline-block">
+            Launch App Now
           </Link>
         </div>
       </section>
