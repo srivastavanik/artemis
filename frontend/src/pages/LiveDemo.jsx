@@ -1,11 +1,14 @@
 import { useState, useEffect } from 'react';
-import { Play, Pause, RefreshCw, Zap, Target, Brain, Rocket } from 'lucide-react';
+import { Play, Pause, RefreshCw, Zap, Target, Brain, Rocket, Mail, User, Building, Link } from 'lucide-react';
 import MetricCard from '../components/MetricCard';
 import ProspectCard from '../components/ProspectCard';
 
 function LiveDemo() {
   const [isRunning, setIsRunning] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
+  const [activeAgent, setActiveAgent] = useState(null);
+  const [consoleMessages, setConsoleMessages] = useState([]);
+  const [visibleProspects, setVisibleProspects] = useState(0);
   const [demoMetrics, setDemoMetrics] = useState({
     prospectsFound: 0,
     enrichmentRate: 0,
@@ -43,40 +46,125 @@ function LiveDemo() {
   const mockProspects = [
     {
       id: 1,
-      name: "Sarah Chen",
-      title: "VP of Sales",
-      company: "TechCorp Solutions",
+      name: "Shreyash Goli",
+      title: "Product Manager",
+      company: "UC Berkeley",
+      email: "shreyash_goli@berkeley.edu",
+      linkedin: "https://www.linkedin.com/in/shreyash-goli/",
       score: 92,
       intent: "High",
       enriched: true
     },
     {
       id: 2,
-      name: "Michael Rodriguez",
-      title: "Head of Revenue",
-      company: "Growth Dynamics",
+      name: "Kedaar Ramanathan",
+      title: "Engineering Lead",
+      company: "UC Berkeley",
+      email: "kedaarnr@berkeley.edu",
+      linkedin: "https://www.linkedin.com/in/kedaarr/",
       score: 88,
-      intent: "Medium",
+      intent: "High",
       enriched: true
     },
     {
       id: 3,
-      name: "Emily Watson",
-      title: "Sales Director",
-      company: "Innovation Labs",
+      name: "Diya Girishkumar",
+      title: "Data Scientist",
+      company: "UC Berkeley",
+      email: "diya_girishkumar@berkeley.edu",
+      linkedin: "https://www.linkedin.com/in/diyagirishkumar/",
       score: 95,
+      intent: "High",
+      enriched: true
+    },
+    {
+      id: 4,
+      name: "Gatik Trivedi",
+      title: "Software Engineer",
+      company: "UC Berkeley",
+      email: "gatiktrivedi@berkeley.edu",
+      linkedin: "https://www.linkedin.com/in/gatik-trivedi/",
+      score: 90,
+      intent: "Medium",
+      enriched: true
+    },
+    {
+      id: 5,
+      name: "Rohil Agarwal",
+      title: "ML Engineer",
+      company: "UC Berkeley",
+      email: "rohil@berkeley.edu",
+      linkedin: "https://www.linkedin.com/in/rohil-ag/",
+      score: 87,
+      intent: "High",
+      enriched: true
+    },
+    {
+      id: 6,
+      name: "Krish Desai",
+      title: "Business Analyst",
+      company: "UC Berkeley",
+      email: "krishdesai@berkeley.edu",
+      linkedin: "https://www.linkedin.com/in/krish-desai-ucb/",
+      score: 93,
       intent: "High",
       enriched: true
     }
   ];
 
+  // Agent names and colors
+  const agents = {
+    scout: { name: 'Scout Agent', color: 'text-blue-400' },
+    analyst: { name: 'Analyst Agent', color: 'text-yellow-400' },
+    strategist: { name: 'Strategist Agent', color: 'text-purple-400' },
+    executor: { name: 'Executor Agent', color: 'text-green-400' }
+  };
+
   useEffect(() => {
     if (!isRunning) return;
+
+    // Set active agent based on step
+    const agentMap = ['scout', 'scout', 'analyst', 'executor'];
+    setActiveAgent(agentMap[currentStep]);
+
+    // Add console messages based on step
+    const stepMessages = {
+      0: [
+        { agent: 'scout', message: 'Initializing BrightData web scraping engine...' },
+        { agent: 'scout', message: 'Searching LinkedIn for decision makers...' },
+        { agent: 'scout', message: 'Analyzing UC Berkeley talent pool...' }
+      ],
+      1: [
+        { agent: 'scout', message: 'Enriching prospect data from multiple sources...' },
+        { agent: 'scout', message: 'Found LinkedIn profiles for all targets...' },
+        { agent: 'scout', message: 'Extracting professional background and interests...' }
+      ],
+      2: [
+        { agent: 'analyst', message: 'Analyzing prospect engagement signals...' },
+        { agent: 'analyst', message: 'Scoring based on LlamaIndex AI insights...' },
+        { agent: 'analyst', message: 'High intent detected for 5 of 6 prospects!' }
+      ],
+      3: [
+        { agent: 'strategist', message: 'Creating personalized message sequences...' },
+        { agent: 'executor', message: 'Preparing Arcade.ai campaign execution...' },
+        { agent: 'executor', message: `Scheduling emails to: ${mockProspects.slice(0, 3).map(p => p.email).join(', ')}` }
+      ]
+    };
+
+    // Add messages for current step
+    if (stepMessages[currentStep]) {
+      stepMessages[currentStep].forEach((msg, index) => {
+        setTimeout(() => {
+          setConsoleMessages(prev => [...prev, msg]);
+        }, index * 500);
+      });
+    }
 
     const interval = setInterval(() => {
       setCurrentStep((prev) => {
         if (prev >= demoSteps.length - 1) {
           setIsRunning(false);
+          setActiveAgent(null);
           return 0;
         }
         return prev + 1;
@@ -84,12 +172,17 @@ function LiveDemo() {
 
       // Update metrics progressively
       setDemoMetrics(prev => ({
-        prospectsFound: Math.min(prev.prospectsFound + Math.floor(Math.random() * 5) + 3, 50),
-        enrichmentRate: Math.min(prev.enrichmentRate + Math.floor(Math.random() * 10) + 15, 95),
-        engagementScore: Math.min(prev.engagementScore + Math.floor(Math.random() * 8) + 12, 89),
-        messagesScheduled: Math.min(prev.messagesScheduled + Math.floor(Math.random() * 7) + 5, 45)
+        prospectsFound: Math.min(prev.prospectsFound + Math.floor(Math.random() * 2) + 1, 6),
+        enrichmentRate: Math.min(prev.enrichmentRate + Math.floor(Math.random() * 10) + 15, 100),
+        engagementScore: Math.min(prev.engagementScore + Math.floor(Math.random() * 8) + 12, 91),
+        messagesScheduled: Math.min(prev.messagesScheduled + Math.floor(Math.random() * 2) + 1, 6)
       }));
-    }, 2500);
+
+      // Show prospects progressively
+      if (currentStep >= 1) {
+        setVisibleProspects(prev => Math.min(prev + 1, mockProspects.length));
+      }
+    }, 3500);
 
     return () => clearInterval(interval);
   }, [isRunning, currentStep]);
@@ -97,6 +190,9 @@ function LiveDemo() {
   const startDemo = () => {
     setIsRunning(true);
     setCurrentStep(0);
+    setConsoleMessages([]);
+    setVisibleProspects(0);
+    setActiveAgent(null);
     setDemoMetrics({
       prospectsFound: 0,
       enrichmentRate: 0,
@@ -108,6 +204,9 @@ function LiveDemo() {
   const resetDemo = () => {
     setIsRunning(false);
     setCurrentStep(0);
+    setConsoleMessages([]);
+    setVisibleProspects(0);
+    setActiveAgent(null);
     setDemoMetrics({
       prospectsFound: 0,
       enrichmentRate: 0,
@@ -241,17 +340,82 @@ function LiveDemo() {
       </div>
 
       {/* Demo Results */}
-      {(currentStep >= 2 || !isRunning) && demoMetrics.prospectsFound > 0 && (
+      {visibleProspects > 0 && (
         <div className="glass-morphism p-6">
-          <h3 className="text-xl font-bold mb-4">Discovered Prospects</h3>
+          <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
+            <User className="w-5 h-5" />
+            Discovered Prospects
+          </h3>
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            {mockProspects.slice(0, Math.min(3, Math.floor(demoMetrics.prospectsFound / 10))).map((prospect) => (
-              <ProspectCard 
-                key={prospect.id} 
-                prospect={prospect}
-                className="transform hover:scale-105 transition-transform"
-              />
+            {mockProspects.slice(0, visibleProspects).map((prospect, index) => (
+              <div 
+                key={prospect.id}
+                className="animate-fadeIn"
+                style={{ animationDelay: `${index * 200}ms` }}
+              >
+                <div className="bg-white/5 rounded-lg p-4 border border-white/10 hover:border-primary/30 transition-all">
+                  <div className="flex items-start justify-between mb-3">
+                    <div>
+                      <h4 className="font-medium text-lg">{prospect.name}</h4>
+                      <p className="text-sm text-white/60">{prospect.title}</p>
+                      <p className="text-sm text-white/40 flex items-center gap-1">
+                        <Building className="w-3 h-3" />
+                        {prospect.company}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <a 
+                        href={prospect.linkedin} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-blue-400 hover:text-blue-300"
+                      >
+                        <Link className="w-4 h-4" />
+                      </a>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="text-2xl font-bold text-primary">{prospect.score}</div>
+                    <div className="flex-1">
+                      <div className="text-xs text-white/60 mb-1">Engagement Score</div>
+                      <div className="w-full bg-white/10 rounded-full h-2">
+                        <div 
+                          className="bg-primary h-2 rounded-full transition-all duration-1000"
+                          style={{ width: `${prospect.score}%` }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  <div className="mt-3 flex items-center justify-between">
+                    <span className={`text-xs px-2 py-1 rounded ${
+                      prospect.intent === 'High' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'
+                    }`}>
+                      {prospect.intent} Intent
+                    </span>
+                    {prospect.enriched && (
+                      <span className="text-xs text-white/40 flex items-center gap-1">
+                        <Zap className="w-3 h-3" />
+                        Enriched
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* Active Agent Indicator */}
+      {activeAgent && (
+        <div className="glass-morphism p-4 border-l-4 border-primary">
+          <div className="flex items-center gap-3">
+            <div className="animate-pulse">
+              <div className="w-3 h-3 bg-primary rounded-full"></div>
+            </div>
+            <span className={`font-bold ${agents[activeAgent].color}`}>
+              {agents[activeAgent].name} Active
+            </span>
           </div>
         </div>
       )}
@@ -259,49 +423,57 @@ function LiveDemo() {
       {/* Demo Console */}
       <div className="glass-morphism p-6">
         <h3 className="text-xl font-bold mb-4">Agent Activity Console</h3>
-        <div className="bg-black/50 rounded-lg p-4 font-mono text-sm space-y-2 max-h-64 overflow-y-auto">
-          {currentStep >= 0 && (
-            <div className="text-blue-400">
-              [Scout Agent] Initializing prospect discovery...
+        <div className="bg-black/50 rounded-lg p-4 font-mono text-sm space-y-2 max-h-96 overflow-y-auto">
+          {consoleMessages.map((msg, index) => (
+            <div key={index} className={`${agents[msg.agent].color} animate-fadeIn`}>
+              [{agents[msg.agent].name}] {msg.message}
             </div>
-          )}
-          {currentStep >= 0 && demoMetrics.prospectsFound > 5 && (
-            <div className="text-green-400">
-              [Scout Agent] Found {demoMetrics.prospectsFound} high-value prospects
-            </div>
-          )}
-          {currentStep >= 1 && (
-            <div className="text-purple-400">
-              [Enrichment] Gathering data from LinkedIn, Twitter, company websites...
-            </div>
-          )}
-          {currentStep >= 2 && (
-            <div className="text-yellow-400">
-              [Analyst Agent] Calculating intent signals and engagement scores...
-            </div>
-          )}
-          {currentStep >= 2 && demoMetrics.engagementScore > 20 && (
-            <div className="text-yellow-400">
-              [Analyst Agent] Average engagement score: {demoMetrics.engagementScore}/100
-            </div>
-          )}
-          {currentStep >= 3 && (
-            <div className="text-primary">
-              [Strategist Agent] Designing personalized campaign sequences...
-            </div>
-          )}
-          {currentStep >= 3 && demoMetrics.messagesScheduled > 10 && (
-            <div className="text-green-400">
-              [Executor Agent] {demoMetrics.messagesScheduled} messages scheduled for delivery
-            </div>
-          )}
-          {!isRunning && demoMetrics.messagesScheduled > 0 && (
-            <div className="text-white">
-              [System] Demo completed. Ready to launch real campaigns!
+          ))}
+          {!isRunning && consoleMessages.length > 0 && (
+            <div className="text-white mt-4 border-t border-white/20 pt-2">
+              [System] Demo completed. {demoMetrics.messagesScheduled} personalized emails ready for delivery!
             </div>
           )}
         </div>
       </div>
+
+      {/* Email Preview */}
+      {currentStep >= 3 && demoMetrics.messagesScheduled > 0 && (
+        <div className="glass-morphism p-6">
+          <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
+            <Mail className="w-5 h-5" />
+            Campaign Messages Preview
+          </h3>
+          <div className="space-y-3">
+            {mockProspects.slice(0, Math.min(3, demoMetrics.messagesScheduled)).map((prospect, index) => (
+              <div key={prospect.id} className="bg-white/5 rounded-lg p-4 animate-slideIn" style={{ animationDelay: `${index * 200}ms` }}>
+                <div className="flex items-start justify-between mb-2">
+                  <div>
+                    <p className="text-sm text-white/60">To:</p>
+                    <p className="font-medium">{prospect.email}</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <a 
+                      href={prospect.linkedin} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-blue-400 hover:text-blue-300"
+                    >
+                      <Link className="w-4 h-4" />
+                    </a>
+                  </div>
+                </div>
+                <p className="text-sm text-white/60 mb-1">Subject:</p>
+                <p className="text-sm mb-2">Personalized outreach for {prospect.name} - {prospect.title}</p>
+                <div className="flex items-center gap-2 text-xs text-white/40">
+                  <span className="px-2 py-1 bg-primary/20 rounded">Score: {prospect.score}</span>
+                  <span className="px-2 py-1 bg-green-500/20 rounded">{prospect.intent} Intent</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
