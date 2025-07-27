@@ -26,9 +26,10 @@ const Signup = () => {
     try {
       setError('');
       setLoading(true);
-      await signUp(formData.email, formData.password, {
-        name: formData.name,
-        company: formData.company
+      await signUp({
+        email: formData.email,
+        password: formData.password,
+        fullName: formData.name
       });
       navigate('/onboarding');
     } catch (error) {
