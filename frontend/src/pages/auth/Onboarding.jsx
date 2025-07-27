@@ -157,7 +157,7 @@ export default function Onboarding() {
                     value={workspaceData.slug}
                     onChange={handleWorkspaceChange}
                     required
-                    pattern="[a-z0-9-]+"
+                    pattern="[a-z0-9-]*"
                     className="flex-1 px-4 py-3 bg-gray-700/50 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
                     placeholder="acme-sales"
                   />
