@@ -126,8 +126,8 @@ if (process.env.NODE_ENV !== 'production') {
   app.use('/api/test', testRoutes);
 }
 
-// Static files for frontend (in production)
-if (process.env.NODE_ENV === 'production') {
+// Static files for frontend (only if not deployed separately)
+if (process.env.NODE_ENV === 'production' && process.env.SERVE_FRONTEND === 'true') {
   app.use(express.static(join(__dirname, '../../frontend/dist')));
   
   // Catch all route for SPA

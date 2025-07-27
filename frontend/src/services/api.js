@@ -6,7 +6,7 @@ class ApiService {
   }
 
   async request(endpoint, options = {}) {
-    const url = `${API_BASE_URL}${endpoint}`;
+    const url = `${API_BASE_URL}/api${endpoint}`;
     
     const config = {
       ...options,
