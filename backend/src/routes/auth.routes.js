@@ -208,7 +208,7 @@ router.get('/me', authenticate, async (req, res) => {
     // Get fresh user data including workspace
     const { data: user, error } = await authService.supabase
       .from('users')
-      .select('*, workspaces(*)')
+      .select('*, workspaces!users_workspace_id_fkey(*)')
       .eq('id', req.user.id)
       .single();
 
@@ -385,7 +385,7 @@ router.get('/session', optionalAuth, async (req, res) => {
     // Get fresh user data
     const { data: user, error } = await authService.supabase
       .from('users')
-      .select('*, workspaces(*)')
+      .select('*, workspaces!users_workspace_id_fkey(*)')
       .eq('id', req.user.id)
       .single();
 
@@ -424,7 +424,7 @@ router.patch('/profile', authenticate, async (req, res) => {
         updated_at: new Date().toISOString()
       })
       .eq('id', req.user.id)
-      .select('*, workspaces(*)')
+      .select('*, workspaces!users_workspace_id_fkey(*)')
       .single();
 
     if (error) throw error;
