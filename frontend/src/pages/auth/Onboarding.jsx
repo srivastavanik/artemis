@@ -64,18 +64,33 @@ export default function Onboarding() {
 
   const handleProfileSubmit = async () => {
     setLoading(true);
+    setError('');
 
     try {
       // Update user profile with additional data
-      // This would call a profile update endpoint
-      
-      // Mark onboarding as complete
-      const user = authService.getUser();
-      user.onboarding_completed = true;
-      authService.setUser(user);
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/profile`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authService.getToken()}`
+        },
+        body: JSON.stringify({
+          ...profileData,
+          onboarding_completed: true
+        })
+      });
 
-      // Redirect to main app
-      navigate('/');
+      if (!response.ok) {
+        throw new Error('Failed to update profile');
+      }
+
+      const data = await response.json();
+      
+      // Update local user data
+      authService.setUser(data.data);
+
+      // Redirect to dashboard
+      navigate('/dashboard');
     } catch (err) {
       setError(err.toString());
     } finally {
@@ -83,8 +98,30 @@ export default function Onboarding() {
     }
   };
 
-  const handleSkip = () => {
-    navigate('/');
+  const handleSkip = async () => {
+    // Mark onboarding as skipped but complete
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/profile`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authService.getToken()}`
+        },
+        body: JSON.stringify({
+          onboarding_completed: true,
+          onboarding_skipped: true
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        authService.setUser(data.data);
+      }
+    } catch (err) {
+      console.error('Skip onboarding error:', err);
+    }
+    
+    navigate('/dashboard');
   };
 
   return (

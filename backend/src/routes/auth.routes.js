@@ -407,4 +407,53 @@ router.get('/session', optionalAuth, async (req, res) => {
   }
 });
 
+/**
+ * @route   PATCH /api/auth/profile
+ * @desc    Update user profile
+ * @access  Private
+ */
+router.patch('/profile', authenticate, async (req, res) => {
+  try {
+    const updates = req.body;
+    
+    // Update user profile
+    const { data: updatedUser, error } = await authService.supabase
+      .from('users')
+      .update({
+        ...updates,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', req.user.id)
+      .select('*, workspaces(*)')
+      .single();
+
+    if (error) throw error;
+
+    // Log audit event if updating important fields
+    if (updates.onboarding_completed || updates.role) {
+      await authService.logAudit(
+        updatedUser.workspace_id, 
+        req.user.id, 
+        'profile_updated', 
+        {
+          updates,
+          ipAddress: req.ip,
+          userAgent: req.headers['user-agent']
+        }
+      );
+    }
+
+    res.json({
+      success: true,
+      data: updatedUser
+    });
+  } catch (error) {
+    logger.error('Update profile error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
 export default router;
