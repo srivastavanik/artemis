@@ -32,7 +32,7 @@
     "googleapis": "^154.0.0",
     "jsonwebtoken": "^9.0.2",
     "llamaindex": "^0.0.45",
-    "nodemailer": "^7.0.5",
+    "nodemailer": "^8.0.4",
     "socket.io": "^4.7.2",
     "winston": "^3.11.0"
   },
